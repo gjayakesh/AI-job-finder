@@ -1,0 +1,17 @@
+{
+  "name": "ai-career-agent-worker",
+  "version": "1.0.0",
+  "description": "Scheduled job: job discovery and alerts for AI Career Agent",
+  "main": "run.mjs",
+  "scripts": {
+    "start": "node run.mjs"
+  },
+  "dependencies": {
+    "web-push": "^3.6.7"
+  },
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  }
+}

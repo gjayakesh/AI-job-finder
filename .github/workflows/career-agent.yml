@@ -1,0 +1,77 @@
+name: Career agent
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'   # every 30 minutes (GitHub may delay runs when busy)
+  workflow_dispatch:
+    inputs:
+      force_discovery:
+        description: 'Search the job feeds now (ignore the 6-hour spacing)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write   # only used to push a tiny keep-alive commit every ~45 days
+
+concurrency:
+  group: career-agent
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: worker/package-lock.json
+
+      - name: Install
+        working-directory: worker
+        run: npm ci --omit=dev --no-audit --no-fund
+
+      - name: Discover jobs and send alerts
+        working-directory: worker
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          APP_URL: ${{ secrets.APP_URL }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ALERT_FROM_EMAIL: ${{ secrets.ALERT_FROM_EMAIL }}
+          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
+          ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
+          ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
+          FORCE_DISCOVERY: ${{ inputs.force_discovery }}
+        run: |
+          # Optional secrets: fall back to this repo's GitHub Pages address and the URL in config.js.
+          export APP_URL="${APP_URL:-https://${GITHUB_REPOSITORY_OWNER,,}.github.io/${GITHUB_REPOSITORY#*/}/}"
+          export SUPABASE_URL="${SUPABASE_URL:-$(sed -n "s/.*SUPABASE_URL: *'\([^']*\)'.*/\1/p" ../config.js)}"
+          if [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "::notice title=Alerts are off::Add the SUPABASE_SERVICE_ROLE_KEY secret to turn on job discovery and alerts (README step 7). Until then this job only keeps the database awake."
+            node keepalive.mjs
+            exit 0
+          fi
+          node run.mjs
+
+      # GitHub switches off scheduled workflows after 60 days without repository activity.
+      # This makes one small commit if the last one is older than 45 days.
+      - name: Keep the schedule alive
+        if: github.event_name == 'schedule'
+        run: |
+          last=$(git log -1 --format=%ct)
+          now=$(date +%s)
+          if [ $(( (now - last) / 86400 )) -ge 45 ]; then
+            date -u +"%Y-%m-%dT%H:%M:%SZ" > worker/heartbeat.txt
+            git config user.name "career-agent-bot"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add worker/heartbeat.txt
+            git commit -m "chore: keep scheduled alerts active"
+            git push
+          fi
