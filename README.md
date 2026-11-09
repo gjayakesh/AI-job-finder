@@ -45,10 +45,8 @@ If you ever create a new project, paste `supabase/schema.sql` into **SQL Editor 
 
 1. ✅ Already done: GitHub Pages deploys the `main` branch (folder `/ (root)`). Every push updates the site within a minute or two.
 2. Your site is at `https://gjayakesh.github.io/AI-job-finder/`.
-3. **Still to do (2 minutes):** Supabase → **Authentication → URL Configuration**:
-   - **Site URL**: your site address from step 2 above.
-   - **Redirect URLs**: add the same address.
-   This makes the confirmation and password-reset emails link back to your site.
+3. ✅ Already done (9 Nov 2026): Supabase → **Authentication → URL Configuration** has **Site URL** and **Redirect URLs** set to `https://gjayakesh.github.io/AI-job-finder/`.
+   This makes the confirmation, sign-in-link and password-reset emails link back to your site. If the site address ever changes, update both.
 
 ## Step 5 — Create your account
 
