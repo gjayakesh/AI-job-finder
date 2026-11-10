@@ -1,12 +1,19 @@
 // Local test double for Supabase (auth + PostgREST subset), job APIs, Telegram, Resend and Web Push.
 // Usage: node dev/mock-server.mjs  → API on http://localhost:54321, site on http://localhost:8080, push on https://localhost:54443
+// (change the ports with MOCK_API_PORT, MOCK_SITE_PORT and MOCK_PUSH_PORT if they are taken)
+// The site it serves gets a test config.js, so signing up locally never touches your real database.
 import http from 'node:http';
 import https from 'node:https';
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import os from 'node:os';
+import { fileURLToPath } from 'node:url';
+import { spawnSync } from 'node:child_process';
 
-const SITE = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
+const SITE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const API_PORT = +process.env.MOCK_API_PORT || 54321, SITE_PORT = +process.env.MOCK_SITE_PORT || 8080, PUSH_PORT = +process.env.MOCK_PUSH_PORT || 54443;
+const API_ORIGIN = 'http://localhost:' + API_PORT;
 const SERVICE_KEY = 'service-role-test-key', ANON_KEY = 'anon-test-key';
 const AUTOCONFIRM = process.env.MOCK_AUTOCONFIRM !== '0';
 const st = { users: [], rows: [], sessions: {}, emails: [], telegram: [], tgQueue: [], pushes: [], log: [], clock: 0, confirmTokens: {} };
@@ -101,14 +108,47 @@ const REMOTIVE = { jobs: [
   { id: 901, url: 'https://remotive.com/remote-jobs/software-dev/python-backend-901', title: 'Python Backend Developer', company_name: 'Nimbus Remote', candidate_required_location: 'Worldwide', job_type: 'full_time', publication_date: today + 'T00:00:00', salary: '', tags: ['python', 'django', 'postgresql'], description: '<p>Build APIs with <b>Python</b>, Django and PostgreSQL. 1-3 years experience.</p>' },
   { id: 902, url: 'https://remotive.com/remote-jobs/software-dev/python-us-902', title: 'Python Developer', company_name: 'US Only Inc', candidate_required_location: 'USA', job_type: 'full_time', publication_date: today + 'T00:00:00', description: 'US only' },
 ] };
-const GREENHOUSE = { acme: { jobs: [{ id: 5551, title: 'Python Developer - Payments', absolute_url: 'https://boards.greenhouse.io/acme/jobs/5551', location: { name: 'Bengaluru, India' }, updated_at: today + 'T00:00:00Z', company_name: 'Acme Payments', content: '&lt;p&gt;Requirements: Python, Django, REST APIs, MySQL, Git. 0-2 years.&lt;/p&gt;&lt;p&gt;Fee: none&lt;/p&gt;' }] } };
-const LEVER = { cred: [{ id: 'lv-1', text: 'Python Developer (Backend)', hostedUrl: 'https://jobs.lever.co/cred/lv-1', categories: { location: 'Bengaluru', commitment: 'Full-time' }, workplaceType: 'hybrid', descriptionPlain: 'Work on Python services.', lists: [{ text: 'Requirements', content: '<li>Python</li><li>Django</li><li>Git</li>' }], additionalPlain: '', createdAt: Date.now() - 3600e3 }] };
+const ghJob = (id, title, loc, content) => ({ id, title, absolute_url: 'https://job-boards.greenhouse.io/acme/jobs/' + id, location: { name: loc }, updated_at: today + 'T00:00:00Z', first_published: today + 'T00:00:00Z', company_name: 'Acme Payments', content });
+const GREENHOUSE = { acme: { jobs: [
+  ghJob(5551, 'Python Developer - Payments', 'Bengaluru, India', '&lt;p&gt;Requirements: Python, Django, REST APIs, MySQL, Git. 0-2 years of experience.&lt;/p&gt;&lt;p&gt;Fee: none&lt;/p&gt;'),
+  ghJob(5552, 'Senior Staff Python Engineer', 'Bengaluru, India', '&lt;p&gt;10+ years of experience with Python.&lt;/p&gt;'),
+  ghJob(5553, 'Python Developer', 'Indianapolis, IN, United States', '&lt;p&gt;Python, Django. 1-2 years of experience.&lt;/p&gt;'),
+  ghJob(5554, 'Account Executive', 'Bengaluru, India', '&lt;p&gt;Sell things.&lt;/p&gt;'),
+  ghJob(5555, 'Software Engineer I, Backend', 'Hyderabad, India', '&lt;p&gt;What you need: Python, Django, PostgreSQL, REST APIs and Git. 0-2 years of experience building web services.&lt;/p&gt;'),
+  ghJob(5556, 'Software Engineer, iOS', 'Hyderabad, India', '&lt;p&gt;Requirements: Swift, Objective-C, Xcode and UIKit. 1-2 years of experience shipping iOS apps.&lt;/p&gt;'),
+] } };
+const LEVER = { cred: [{ id: 'lv-1', text: 'Python Developer (Backend)', hostedUrl: 'https://jobs.lever.co/cred/lv-1', applyUrl: 'https://jobs.lever.co/cred/lv-1/apply', country: 'IN', categories: { location: 'Bengaluru', commitment: 'Full-time', allLocations: ['Bengaluru'] }, workplaceType: 'hybrid', descriptionPlain: 'Work on Python services.', lists: [{ text: 'Requirements', content: '<li>Python</li><li>Django</li><li>Git</li>' }], additionalPlain: '', createdAt: Date.now() - 3600e3 }] };
+const ASHBY = { orbit: { apiVersion: '1', jobs: [
+  { id: 'ash-1', title: 'Full Stack Developer', employmentType: 'FullTime', location: 'Orbit HQ, Bengaluru', secondaryLocations: [], publishedAt: today + 'T00:00:00.000+00:00', isListed: true, isRemote: false, workplaceType: 'Hybrid', address: { postalAddress: { addressCountry: 'India', addressLocality: 'Bangalore' } }, jobUrl: 'https://jobs.ashbyhq.com/orbit/ash-1', applyUrl: 'https://jobs.ashbyhq.com/orbit/ash-1/application', descriptionPlain: 'Requirements:\n- Python and Django for the API\n- React and JavaScript for the web app\n- MySQL, Git\n0-2 years of experience.' },
+  { id: 'ash-2', title: 'Python Developer', location: 'Bengaluru', isListed: false, address: { postalAddress: { addressCountry: 'India' } }, jobUrl: 'https://jobs.ashbyhq.com/orbit/ash-2', descriptionPlain: 'Unlisted role.' },
+] } };
+const SMART = { Freshdesk: [
+  { id: 'sr-1', name: 'Python Developer', company: { identifier: 'Freshdesk', name: 'Freshdesk' }, releasedDate: today + 'T00:00:00.000Z', location: { city: 'Chennai', country: 'in', remote: false, hybrid: true, fullLocation: 'Chennai, , India' }, typeOfEmployment: { id: 'permanent', label: 'Full-time' }, experienceLevel: { id: 'entry_level', label: 'Entry Level' }, jobAd: { sections: { jobDescription: { title: 'Job Description', text: '<p>Build internal tools.</p>' }, qualifications: { title: 'Qualifications', text: '<p>Python, Flask, REST APIs, SQL and Git. 0-1 years of experience.</p>' } } }, postingUrl: 'https://jobs.smartrecruiters.com/Freshdesk/sr-1-python-developer', applyUrl: 'https://jobs.smartrecruiters.com/Freshdesk/sr-1-python-developer?oga=true' },
+] };
+const REMOTEOK = [{ legal: 'Mock terms' }, { id: 'rok-1', slug: 'remote-python-developer-rok-1', date: today + 'T00:00:00+00:00', company: 'Farflung', position: 'Python Developer', tags: ['python', 'django'], description: '<p>Python, Django and PostgreSQL. 1-2 years of experience.</p>', location: 'Worldwide', url: 'https://remoteok.com/remote-jobs/remote-python-developer-rok-1', apply_url: 'https://remoteok.com/remote-jobs/remote-python-developer-rok-1', salary_min: 0, salary_max: 0 }, { id: 'rok-2', date: today + 'T00:00:00+00:00', company: 'Stateside', position: 'Python Developer', tags: ['python'], description: 'US only', location: 'Houston', url: 'https://remoteok.com/remote-jobs/rok-2' }];
+st.gone = [];
 async function external(req, res, url) {
   const p = url.pathname;
   if (p.startsWith('/mock/adzuna')) { st.log.push('adzuna ' + url.search); if (!url.searchParams.get('app_id')) return send(res, 401, { error: 'auth' }); return send(res, 200, ADZUNA); }
   if (p.startsWith('/mock/remotive')) { st.log.push('remotive'); return send(res, 200, REMOTIVE); }
-  let m = p.match(/^\/mock\/greenhouse\/([^/]+)\/jobs/); if (m) { st.log.push('greenhouse ' + m[1]); return GREENHOUSE[m[1]] ? send(res, 200, GREENHOUSE[m[1]]) : send(res, 404, { status: 404 }); }
-  m = p.match(/^\/mock\/lever\/([^/?]+)/); if (m) { st.log.push('lever ' + m[1]); return LEVER[m[1]] ? send(res, 200, LEVER[m[1]]) : send(res, 404, { ok: false }); }
+  const live = arr => arr.filter(x => !st.gone.includes(String(x.id)));
+  let m = p.match(/^\/mock\/greenhouse\/([^/]+)\/jobs(?:\/(\d+))?/);
+  if (m) {
+    st.log.push('greenhouse ' + m[1] + (m[2] ? ' job ' + m[2] : '')); const b = GREENHOUSE[m[1]]; if (!b) return send(res, 404, { status: 404 });
+    if (m[2]) { const one = live(b.jobs).find(x => String(x.id) === m[2]); return one ? send(res, 200, one) : send(res, 404, { status: 404 }); }
+    const full = url.searchParams.get('content') === 'true';
+    return send(res, 200, { jobs: live(b.jobs).map(x => full ? x : { ...x, content: undefined }), meta: { total: live(b.jobs).length } });
+  }
+  m = p.match(/^\/mock\/lever\/([^/?]+)/); if (m) { st.log.push('lever ' + m[1]); return LEVER[m[1]] ? send(res, 200, live(LEVER[m[1]])) : send(res, 404, { ok: false }); }
+  m = p.match(/^\/mock\/ashby\/([^/?]+)/); if (m) { st.log.push('ashby ' + m[1]); return ASHBY[m[1]] ? send(res, 200, { ...ASHBY[m[1]], jobs: live(ASHBY[m[1]].jobs) }) : send(res, 404, {}); }
+  m = p.match(/^\/mock\/smartrecruiters\/([^/]+)\/postings(?:\/([^/?]+))?/);
+  if (m) {
+    st.log.push('smartrecruiters ' + m[1] + (m[2] ? ' posting ' + m[2] : '')); const b = SMART[m[1]]; if (!b) return send(res, 404, {});
+    if (m[2]) { const one = live(b).find(x => x.id === m[2]); return one ? send(res, 200, one) : send(res, 404, {}); }
+    const list = live(b).map(x => ({ ...x, jobAd: undefined, applyUrl: undefined, postingUrl: undefined })); return send(res, 200, { offset: 0, limit: 100, totalFound: list.length, content: list });
+  }
+  if (p.startsWith('/mock/remoteok')) { st.log.push('remoteok'); return send(res, 200, REMOTEOK); }
+  if (p === '/__gone') { const body = await readBody(req); st.gone = (body.ids || []).map(String); return send(res, 200, { ok: true }); }
   m = p.match(/^\/mock\/telegram\/bot([^/]+)\/(\w+)/);
   if (m) {
     const body = await readBody(req); if (m[1] !== 'TGTOKEN') return send(res, 401, { ok: false, description: 'Unauthorized' });
@@ -118,7 +158,7 @@ async function external(req, res, url) {
   }
   if (p === '/mock/resend/emails') { const body = await readBody(req); if ((req.headers.authorization || '') !== 'Bearer RESENDKEY') return send(res, 401, { message: 'API key is invalid' }); st.emails.push({ to: body.to, subject: body.subject, html: body.html, from: body.from }); return send(res, 200, { id: 'em_' + st.emails.length }); }
   if (p === '/__state') return send(res, 200, st);
-  if (p === '/__reset') { Object.assign(st, { users: [], rows: [], sessions: {}, emails: [], telegram: [], tgQueue: [], pushes: [], log: [] }); return send(res, 200, { ok: true }); }
+  if (p === '/__reset') { Object.assign(st, { users: [], rows: [], sessions: {}, emails: [], telegram: [], tgQueue: [], pushes: [], log: [], gone: [] }); return send(res, 200, { ok: true }); }
   if (p === '/__tg') { const body = await readBody(req); st.tgQueue.push({ update_id: 1000 + st.tgQueue.length, message: { message_id: 1, chat: { id: body.chat || 777001 }, from: { username: body.user || 'tester' }, text: body.text } }); return send(res, 200, { ok: true }); }
   if (p === '/__rows') { const body = await readBody(req); for (const b of body) { const row = { ...b, updated_at: now() }; const i = st.rows.findIndex(r => r.user_id === row.user_id && r.kind === row.kind && r.id === row.id); if (i >= 0) st.rows[i] = row; else st.rows.push(row); } return send(res, 200, { ok: true }); }
   return send(res, 404, { message: 'no mock for ' + p });
@@ -131,19 +171,34 @@ http.createServer(async (req, res) => {
     if (url.pathname.startsWith('/auth/v1')) return auth(req, res, url);
     return external(req, res, url);
   } catch (e) { console.error(e); send(res, 500, { message: e.message }); }
-}).listen(54321, () => console.log('mock api on :54321')).keepAliveTimeout = 120000;
+}).listen(API_PORT, () => console.log('mock api on :' + API_PORT)).keepAliveTimeout = 120000;
 // static site
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.css': 'text/css' };
+// Unless MOCK_REAL_CONFIG=1, the site is pointed at this mock (never at your real Supabase project) and at the mock job feeds.
+const TEST_CONFIG = () => 'window.APP_CONFIG = ' + JSON.stringify({
+  SUPABASE_URL: API_ORIGIN, SUPABASE_ANON_KEY: ANON_KEY, VAPID_PUBLIC_KEY: process.env.MOCK_VAPID_PUBLIC_KEY || '', TELEGRAM_BOT_USERNAME: 'TestCareerBot', APP_NAME: 'AI Career Agent',
+  FEED_API: { greenhouse: API_ORIGIN + '/mock/greenhouse', lever: API_ORIGIN + '/mock/lever', ashby: API_ORIGIN + '/mock/ashby', smartrecruiters: API_ORIGIN + '/mock/smartrecruiters', remotive: API_ORIGIN + '/mock/remotive', remoteok: API_ORIGIN + '/mock/remoteok' },
+  BOARDS: [['greenhouse', 'acme', 'Acme Payments'], ['lever', 'cred', 'CRED'], ['ashby', 'orbit', 'Orbit'], ['smartrecruiters', 'Freshdesk', 'Freshdesk'], ['greenhouse', 'missing-board', 'Missing Board']],
+}) + ';';
 http.createServer((req, res) => {
-  const u = new URL(req.url, 'http://localhost'); let f = path.join(SITE, decodeURIComponent(u.pathname)); if (f.endsWith('/')) f += 'index.html';
-  if (!f.startsWith(SITE) || !fs.existsSync(f)) { res.writeHead(404); return res.end('not found'); }
+  const u = new URL(req.url, 'http://localhost');
+  if (u.pathname === '/config.js' && process.env.MOCK_REAL_CONFIG !== '1') { res.writeHead(200, { 'Content-Type': 'text/javascript', 'Cache-Control': 'no-store' }); return res.end(TEST_CONFIG()); }
+  let f = path.join(SITE, decodeURIComponent(u.pathname)); if (u.pathname.endsWith('/')) f = path.join(f, 'index.html');
+  if (!f.startsWith(SITE) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); return res.end('not found'); }
   res.writeHead(200, { 'Content-Type': TYPES[path.extname(f)] || 'application/octet-stream', 'Cache-Control': 'no-store' }); fs.createReadStream(f).pipe(res);
-}).listen(8080, () => console.log('site on :8080'));
-// push endpoint (https, self-signed)
-const certDir = '/tmp/mockcert';
-https.createServer({ key: fs.readFileSync(certDir + '/key.pem'), cert: fs.readFileSync(certDir + '/cert.pem') }, async (req, res) => {
-  const chunks = []; req.on('data', c => chunks.push(c)); req.on('end', () => {
-    const id = req.url.split('/').pop(); st.pushes.push({ id, bytes: Buffer.concat(chunks).length, encoding: req.headers['content-encoding'], ttl: req.headers.ttl, auth: (req.headers.authorization || '').slice(0, 10) });
-    if (id === 'gone') { res.writeHead(410); return res.end(); } res.writeHead(201); res.end();
-  });
-}).listen(54443, () => console.log('push on :54443'));
+}).listen(SITE_PORT, () => console.log('site on :' + SITE_PORT));
+// push endpoint (https, self-signed). Needs openssl once to make a throwaway certificate; skipped when it is unavailable.
+const certDir = path.join(os.tmpdir(), 'aca-mockcert');
+try {
+  if (!fs.existsSync(path.join(certDir, 'key.pem'))) {
+    fs.mkdirSync(certDir, { recursive: true });
+    const r = spawnSync('openssl', ['req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-days', '30', '-subj', '/CN=localhost', '-keyout', path.join(certDir, 'key.pem'), '-out', path.join(certDir, 'cert.pem')], { stdio: 'ignore', env: { ...process.env, MSYS_NO_PATHCONV: '1' } });
+    if (r.status !== 0) throw new Error('openssl not available');
+  }
+  https.createServer({ key: fs.readFileSync(path.join(certDir, 'key.pem')), cert: fs.readFileSync(path.join(certDir, 'cert.pem')) }, async (req, res) => {
+    const chunks = []; req.on('data', c => chunks.push(c)); req.on('end', () => {
+      const id = req.url.split('/').pop(); st.pushes.push({ id, bytes: Buffer.concat(chunks).length, encoding: req.headers['content-encoding'], ttl: req.headers.ttl, auth: (req.headers.authorization || '').slice(0, 10) });
+      if (id === 'gone') { res.writeHead(410); return res.end(); } res.writeHead(201); res.end();
+    });
+  }).listen(PUSH_PORT, () => console.log('push on :' + PUSH_PORT));
+} catch (e) { console.log('push mock skipped: ' + e.message); }

@@ -4,12 +4,14 @@ function render() {
   const r = route();
   const main = $('#main'); const prevScroll = main ? main.scrollTop : 0; const sameView = _lastView === r.view + (r.id || '');
   let title = TITLES[r.view] || 'Dashboard', body;
-  if (S.mode === 'loading') body = `<div class="card"><div class="busy"><span class="spin"></span>Loading your workspace…</div></div>`;
+  if (S.mode === 'loading') body = `<div class="skeleton" role="status" aria-label="Loading your workspace"><div class="sk sk-row"></div><div class="sk sk-card"></div><div class="grid g2"><div class="sk sk-card tall"></div><div class="sk sk-card tall"></div></div></div>`;
+  else if (S.mode === 'error') body = `<div class="card">${emptyState('We couldn’t load your data', esc(S.loadError || 'The server did not answer') + '. Nothing has been lost; check your connection and try again.', '<button class="btn primary" type="button" data-act="retry-load">Try again</button>')}</div>`;
   else if (r.view === 'job') { const j = S.jobs[r.id]; title = j ? 'Job Match Analysis' : 'Job'; body = V.job(r.id); }
   else body = (V[r.view] || V.dashboard)();
   $('#app').innerHTML = layout(r.view, title, body);
   const m2 = $('#main'); if (m2 && sameView) m2.scrollTop = prevScroll;
   _lastView = r.view + (r.id || '');
+  Motion.after(!sameView);
   if (r.view === 'chat') { const log = $('#chat-log'); if (log) log.scrollTop = log.scrollHeight; }
 }
 window.addEventListener('hashchange', () => { S.ui.notifOpen = false; render(); const m = $('#main'); if (m) m.scrollTop = 0; const rail = $('#rail'); if (rail) rail.classList.remove('open'); });
@@ -26,7 +28,7 @@ function rescoreAll() {
   logAgent('Job Matching Agent', 'Re-scored all jobs', `${Object.keys(S.jobs).length} jobs with weights ${Object.entries(S.settings.weights).map(([k, v]) => k + v).join(' ')}`);
 }
 async function runWorkflow(j, { local = false } = {}) {
-  if (!ensureProfile()) return false;
+  if (!ensureProfile() || !ensureOpen(j)) return false;
   if (j.stage === 'Discovered') scoreAndStore(j);
   if (!j.match) j.match = scoreJob(j, S.profile, S.prefs, S.settings.weights);
   if (j.stage === 'Analyzed') moveStage(j, 'Shortlisted', { by: 'Application Agent', note: 'Selected for application', silent: true });
@@ -117,7 +119,6 @@ function applyExtracted(mode) {
     p.certifications = uniqCI([...(p.certifications || []), ...ex.certifications]); p.achievements = uniqCI([...(p.achievements || []), ...ex.achievements]);
   } else p = { ...ex, ...Object.fromEntries(Object.entries(keep).filter(([, v]) => v !== undefined)) };
   p.workModes = p.workModes || []; p.employmentTypes = p.employmentTypes || ['full_time']; p.updatedAt = nowISO();
-  delete p.demo;
   S.profile = p; save.profile(); _pendingProfile = null; closeModal();
   rescoreAll(); logAgent('Career Profile Agent', mode === 'merge' ? 'Merged extracted profile' : 'Saved extracted profile', `${p.skills.length} skills`);
   toast('Profile saved. Add notice period, salary and job targets to complete it.'); go('profile');
@@ -144,7 +145,15 @@ function overviewData() {
   return { counts: { jobs: A.total, matching70: A.matching, awaitingApproval: A.awaiting, applied: A.applied, shortlisted: A.shortlisted, rejected: A.rejected, interviews: A.interviews, offers: A.offers }, rates: { shortlist: A.shortlistRate, rejection: A.rejectionRate, interview: A.interviewRate, offer: A.offerRate }, preferences: S.prefs ? prefsToApiJSON(S.prefs) : null, profile: { hasProfile: !!p.name, years: candidateYears(p), skills: profileSkillNames(p).slice(0, 30), projects: (p.projects || []).map(x => x.name) } };
 }
 const jobBrief = j => ({ id: j.id, title: j.title, company: j.company, score: j.match ? j.match.score : null, stage: j.stage, location: j.workMode === 'remote' ? 'Remote' : j.location, salary: salaryRange(j.salaryMin, j.salaryMax), link: '#job-' + j.id });
-function openJobs() { return Object.values(S.jobs).filter(j => !['Archived', 'EmployerRejected', 'Withdrawn', 'OfferDeclined', 'OfferAccepted', 'RejectedByUser'].includes(j.stage)); }
+const isClosed = j => !!(j.closed || j.expired);
+const stillPreparing = j => ['Discovered', 'Analyzed', 'Shortlisted', 'ResumeGenerated', 'AwaitingApproval', 'Approved'].includes(j.stage);
+function openJobs() { return Object.values(S.jobs).filter(j => !['Archived', 'EmployerRejected', 'Withdrawn', 'OfferDeclined', 'OfferAccepted', 'RejectedByUser'].includes(j.stage) && !(isClosed(j) && stillPreparing(j))); }
+/** Stops work on a posting the employer has taken down. */
+function ensureOpen(j) {
+  if (j.closed) { toast(`${j.company} no longer lists this role, so it can’t be applied to. Check the posting, or mark it open again on the job page.`, 'bad'); return false; }
+  if (j.expired) { toast('The application deadline for this role has passed.', 'bad'); return false; }
+  return true;
+}
 function topOpenForPrep(n, minScore = S.settings.autoShortlist) { return openJobs().filter(j => ['Discovered', 'Analyzed', 'Shortlisted', 'ResumeGenerated'].includes(j.stage) && !j.suspicious && !j.expired && (j.match ? j.match.score : 0) >= minScore).sort((a, b) => (b.match ? b.match.score : 0) - (a.match ? a.match.score : 0)).slice(0, n); }
 async function batchPrepare(list) { const done = []; for (const j of list) { try { if (await runWorkflow(j, { local: true })) done.push({ ...jobBrief(j), needsInput: (j.app.answers || []).filter(a => a.needsInput && !a.a).length }); } catch (e) { console.warn(e); } } return done; }
 function chatTools() {
@@ -168,13 +177,17 @@ function chatTools() {
 }
 function chatRules() {
   return `You are the AI Career Agent inside a job-search web app for a job seeker in India. Today is ${new Date().toDateString()}. Use the tools to read and change the app's data.
-Rules: Never say an application was submitted; only the user can approve and submit in the Approval Center. You cannot browse the web or query job boards: for discovery, save preferences, call discovery_links, and tell the user to open the links and import postings (they can paste a posting here and you call import_job). Never invent profile facts. If a preference is ambiguous, ask before saving it, and confirm before preparing more than 10 applications. Distinguish confirmed rejection reasons from inferences. Keep replies short; use markdown bullets; link app pages as [Approval Center](#approvals) or a job as [Title at Company](#job-ID).
+Rules: Never say an application was submitted; only the user can approve and submit in the Approval Center. You cannot browse the web. Open roles come from the app's own search of public company career boards (the user runs it with the Search button or by saying "search now"); for LinkedIn, Naukri and similar sites call discovery_links and tell the user to open the links and import postings (they can paste a posting here and you call import_job). Never invent profile facts. If a preference is ambiguous, ask before saving it, and confirm before preparing more than 10 applications. Distinguish confirmed rejection reasons from inferences. Keep replies short; use markdown bullets; link app pages as [Approval Center](#approvals) or a job as [Title at Company](#job-ID).
 ${UNTRUSTED}`;
 }
 async function chatLocal(msg) {
   const t = msg.toLowerCase();
   if (S.ui.pendingPrefs && /^(no|cancel|discard)\b/.test(t)) { S.ui.pendingPrefs = null; return 'Discarded. Your saved preferences are unchanged.'; }
-  if (S.ui.pendingPrefs && /^(yes|y|confirm|ok|okay|save|correct|looks good)\b/.test(t)) { S.prefs = { ...S.ui.pendingPrefs, savedAt: nowISO() }; S.ui.pendingPrefs = null; save.prefs(); rescoreAll(); logAgent('Career Profile Agent', 'Saved preferences from chat', S.prefs.titles.join(', ')); return `Saved. Next, open the searches on [Job Discovery](#discover) and import the postings you like; each one is scored against your profile.`; }
+  if (S.ui.pendingPrefs && /^(yes|y|confirm|ok|okay|save|correct|looks good)\b/.test(t)) { S.prefs = { ...S.ui.pendingPrefs, savedAt: nowISO() }; S.ui.pendingPrefs = null; save.prefs(); rescoreAll(); logAgent('Career Profile Agent', 'Saved preferences from chat', S.prefs.titles.join(', ')); const r = await runLiveSearch({ quiet: true }); return r ? `Saved, and I searched the open roles: **${r.fresh.length} new match${r.fresh.length === 1 ? '' : 'es'}** from ${r.stats.listed.toLocaleString('en-IN')} roles on ${r.stats.boardsOk} company boards.${r.fresh.length ? '\n' + r.fresh.slice().sort((a, b) => b.match.score - a.match.score).slice(0, 5).map(j => `- [${j.title} at ${j.company}](#job-${j.id}) · ${j.match.score}`).join('\n') + '\n\nAll of them are on [Recommended Jobs](#jobs).' : ' Nothing new fits right now; widen the titles or cities in [Job Preferences](#preferences), or add companies on [Job Discovery](#discover).'}` : 'Saved. Run the search from [Job Discovery](#discover).'; }
+  if (/^(search|find|check|look)( for)?( the| new| more| open)* (jobs|roles|openings)( now| again)?[.!]?$/.test(t.trim()) || /\b(search|refresh|check) (now|again|for new jobs)\b/.test(t)) {
+    const r = await runLiveSearch({ quiet: true }); if (!r) return 'Set your job preferences first, then I can search.';
+    return `Searched ${r.stats.boardsOk} company boards (${r.stats.listed.toLocaleString('en-IN')} open roles): **${r.fresh.length} new match${r.fresh.length === 1 ? '' : 'es'}**${r.closed.length ? `, and ${r.closed.length} saved role${r.closed.length === 1 ? ' has' : 's have'} closed` : ''}. See [Recommended Jobs](#jobs).`;
+  }
   let m = t.match(/(?:above|over|more than|at least|>\s*)\s*(\d{2})\s*%?/);
   if (m && /compat|score|match|jobs?/.test(t)) { const n = +m[1]; S.ui.filter.minScore = n; S.ui.filter.status = 'open'; const J = openJobs().filter(j => j.match && j.match.score >= n).sort((a, b) => b.match.score - a.match.score); return J.length ? `**${J.length} open job${J.length > 1 ? 's' : ''} at ${n}% or above:**\n${J.slice(0, 10).map(j => `- [${j.title} at ${j.company}](#job-${j.id}) — ${j.match.score}`).join('\n')}\n\nThe [Recommended Jobs](#jobs) page is filtered the same way.` : `No open jobs score ${n} or above yet. Import more from [Job Discovery](#discover).`; }
   m = t.match(/prepare (?:the )?applications? for (?:my )?top (\d+)/) || t.match(/top (\d+) jobs/);
@@ -190,8 +203,8 @@ async function chatLocal(msg) {
     const keepOld = S.prefs || {}; const p = { ...keepOld };
     for (const [k, v] of Object.entries(p0)) { if (Array.isArray(v) ? v.length : (v !== null && v !== '' && v !== undefined)) p[k] = v; }
     if (!detectEmployment(msg).length && keepOld.employmentTypes) p.employmentTypes = keepOld.employmentTypes;
-    p.raw = msg; p.engine = 'local'; delete p.demo; S.ui.pendingPrefs = p; const amb = prefAmbiguities(p); const nm = (t.match(/find (\d+)/) || [])[1];
-    return `Here is what I understood:\n- Titles: ${p.titles.join(', ') || '—'}\n- Locations: ${p.locations.join(', ') || '—'}\n- Experience: ${p.expMin ?? '?'}–${p.expMax ?? '?'} years\n- Salary: ${salaryRange(p.salaryMin, p.salaryMax)}\n- Skills: ${p.skills.join(', ') || '—'}\n- Type: ${p.employmentTypes.map(e => EMP_LABEL[e]).join(', ')}${amb.length ? `\n\n**Please confirm:** ${amb.join(' ')}` : ''}\n\nReply **confirm** to save these preferences${nm ? `. I can’t browse job boards, so for ${nm} jobs I’ll give you search links on [Job Discovery](#discover) once saved` : ''}.`;
+    p.raw = msg; p.engine = 'local'; S.ui.pendingPrefs = p; const amb = prefAmbiguities(p);
+    return `Here is what I understood:\n- Titles: ${p.titles.join(', ') || '—'}\n- Locations: ${p.locations.join(', ') || '—'}\n- Experience: ${p.expMin ?? '?'}–${p.expMax ?? '?'} years\n- Salary: ${salaryRange(p.salaryMin, p.salaryMax)}\n- Skills: ${p.skills.join(', ') || '—'}\n- Type: ${p.employmentTypes.map(e => EMP_LABEL[e]).join(', ')}${amb.length ? `\n\n**Please confirm:** ${amb.join(' ')}` : ''}\n\nReply **confirm** to save these preferences and search the open roles now.`;
   }
   return null;
 }
@@ -218,84 +231,62 @@ async function chatSend(msg) {
       } finally { _chatCtl = null; }
     }
   } finally { S.ui.chatBusy = false; }
-  if (reply == null) reply = `I can help with:\n- Describing the job you want (e.g. “I am looking for a Junior Python Developer role in Hyderabad, 3–6 LPA”)\n- “Show only jobs with compatibility above 80%”\n- “Prepare applications for my top 10 jobs”\n- “Show me which applications are awaiting approval”\n- “Analyze why I am getting rejected”\n- “Identify the most common missing technical skills”\n- “Prepare me for my upcoming interview”\n- “Compare the salary and benefits of my offers”\n- “Customize my resume for <company>”`;
+  if (reply == null) reply = `I can help with:\n- Describing the job you want (e.g. “I am looking for a Junior Python Developer role in Hyderabad, 3–6 LPA”)\n- “Search now” to look for new open roles\n- “Show only jobs with compatibility above 80%”\n- “Prepare applications for my top 10 jobs”\n- “Show me which applications are awaiting approval”\n- “Analyze why I am getting rejected”\n- “Identify the most common missing technical skills”\n- “Prepare me for my upcoming interview”\n- “Compare the salary and benefits of my offers”\n- “Customize my resume for <company>”`;
   S.chat.push({ role: 'assistant', content: reply, t: nowISO(), engine }); save.chat();
   if (_chatNav) { const n = _chatNav; _chatNav = null; render(); toast('Opening ' + (TITLES[n] || 'page')); setTimeout(() => go(n), 700); } else render();
 }
 
-/* ============ Sample data ============ */
-const DEMO_JDS = [
-  ['AwaitingApproval', 'https://example.com/careers/kitebyte/junior-python-developer', `Junior Python Developer\nCompany: Kitebyte Labs\nLocation: Hyderabad (Hybrid)\nCTC: 4 - 6 LPA\nExperience: 0-2 years\nAbout Kitebyte Labs\nKitebyte Labs is a SaaS company building scheduling tools for clinics.\nResponsibilities\n- Build and maintain REST APIs in Django for our scheduling product\n- Write SQL queries and optimise MySQL tables\n- Write unit tests and take part in code reviews\n- Work with the frontend team to integrate APIs\nRequirements\n- Python, Django, REST APIs\n- MySQL and Git\n- B.Tech or equivalent degree in Computer Science\nNice to have\n- Docker, Celery, AWS`],
-  ['Analyzed', 'https://example.com/careers/bluepeak/full-stack-developer-fresher', `Full Stack Developer (Fresher)\nCompany: Bluepeak Fintech\nLocation: Bengaluru\nSalary: 5 - 7 LPA\nExperience: 0-1 years\nResponsibilities\n- Build customer dashboards with React\n- Develop Node.js services and REST APIs\n- Model data in MySQL\nRequirements\n- JavaScript, React, Node.js\n- MySQL, REST APIs, Git\n- Any graduate (B.E./B.Tech preferred)\nGood to have\n- TypeScript, Redux`],
-  ['Analyzed', 'https://example.com/careers/northwind/python-backend-engineer', `Python Backend Engineer\nCompany: Northwind Analytics\nLocation: Remote (India)\nCompensation: 6 - 9 LPA\nExperience: 1-3 years\nWhat you'll do\n- Design FastAPI services for analytics pipelines\n- Containerise services with Docker\n- Own PostgreSQL schemas and migrations\nMust have\n- Python, FastAPI, PostgreSQL, Docker\nPreferred\n- Redis, AWS, Kafka`],
-  ['InterviewScheduled', 'https://example.com/careers/orbitlane/php-developer', `PHP Developer\nCompany: Orbitlane Systems\nLocation: Hyderabad (On-site)\nCTC: 3.5 - 5 LPA\nExperience: 0-2 years\nResponsibilities\n- Develop features in Laravel for our logistics portal\n- Build responsive pages with HTML, CSS and JavaScript\n- Maintain MySQL databases\nRequirements\n- PHP, Laravel, MySQL\n- JavaScript, HTML, CSS\n- Bachelor's degree in IT or related field`],
-  ['Analyzed', 'https://example.com/careers/tandem/software-engineer-1', `Software Engineer I\nCompany: Tandem Health Tech\nLocation: Pune\nCTC: 8 - 12 LPA\nExperience: 2-4 years\nResponsibilities\n- Build Java microservices on Spring Boot\n- Deploy services on Kubernetes\nRequirements\n- Java, Spring Boot, Microservices, Kubernetes\n- B.Tech/M.Tech in Computer Science\nPreferred\n- Kafka, AWS`],
-  ['EmployerRejected', 'https://example.com/careers/saffron/react-developer', `React Developer\nCompany: Saffron Retail Tech\nLocation: Bengaluru (Hybrid)\nCTC: 4.5 - 6.5 LPA\nExperience: 0-2 years\nResponsibilities\n- Build storefront pages in React and Next.js\n- Improve performance and accessibility\nRequirements\n- React, Next.js, JavaScript, HTML, CSS, Git\nNice to have\n- Tailwind CSS, TypeScript`],
-  ['Shortlisted', 'https://example.com/careers/quantiq/associate-data-analyst', `Associate Data Analyst\nCompany: Quantiq Data\nLocation: Chennai\nSalary: 4 - 5 LPA\nExperience: 0-1 years\nResponsibilities\n- Build reports and dashboards in Power BI\n- Query data with SQL and clean it in Python\nRequirements\n- SQL, Excel, Python, Power BI\n- Any graduate`],
-  ['OfferReceived', 'https://example.com/careers/mosaic/full-stack-python-react', `Full Stack Developer (Python/React)\nCompany: Mosaic Learning\nLocation: Remote\nCTC: 6 - 8 LPA\nExperience: 0-2 years\nResponsibilities\n- Build course authoring tools with Django and React\n- Design REST APIs used by the mobile app\nRequirements\n- Python, Django, React, REST APIs\nPreferred\n- AWS, PostgreSQL`],
-  ['OfferReceived', 'https://example.com/careers/lumen/python-developer', `Python Developer\nCompany: Lumen Cloud Works\nLocation: Bengaluru (Hybrid)\nCTC: 5.5 - 7 LPA\nExperience: 0-2 years\nResponsibilities\n- Build Django services and admin tools\n- Integrate third-party REST APIs\nRequirements\n- Python, Django, REST APIs, SQL\nNice to have\n- Docker, Linux`],
-];
-async function buildDemo() {
-  const ago = d => new Date(Date.now() - d * 86400000).toISOString();
-  const prof = normalizeProfile({
-    name: 'Sample Candidate', email: 'sample.candidate@example.com', phone: '+91 90000 00000', location: 'Hyderabad', linkedin: 'linkedin.com/in/sample-candidate', github: 'github.com/sample-candidate',
-    summary: 'Computer Science graduate who builds web applications with Python, Django and React. Comfortable designing REST APIs and working with MySQL.',
-    skills: ['Python', 'Django', 'REST APIs', 'MySQL', 'SQL', 'Git', 'JavaScript', 'React', 'HTML', 'CSS', 'PHP', 'Bootstrap', 'Postman', 'Linux'],
-    projects: [
-      { name: 'Campus Placement Portal', technologies: 'Django, MySQL, Bootstrap', description: 'Built a placement portal where students apply to campus drives and placement staff shortlist candidates.\nDesigned the MySQL schema and Django admin workflows.\nAdded role-based access for students, recruiters and staff.' },
-      { name: 'Expense Tracker API', technologies: 'Python, Django REST Framework, MySQL, JWT', description: 'Designed REST APIs for recording and categorising expenses.\nImplemented JWT authentication and pagination.\nDocumented endpoints and tested them with Postman.' },
-      { name: 'Recipe Finder', technologies: 'React, JavaScript, REST APIs', description: 'Built a React single-page app that searches a public recipe API.\nAdded filters, favourites and responsive layouts.' },
-      { name: 'Library Management System', technologies: 'PHP, MySQL, HTML, CSS', description: 'Built a PHP and MySQL system to issue and return books with fine calculation.' },
-    ],
-    experiences: [{ employer: 'Brightleaf Software', role: 'Python Developer Intern', start: '2025-01', end: '2025-06', description: 'Built Django REST endpoints for an internal inventory tool.\nWrote SQL reports for the operations team.\nFixed bugs and wrote unit tests for API views.' }],
-    education: [{ degree: 'B.Tech in Computer Science and Engineering', institution: 'Sample Institute of Technology, Hyderabad', year: '2025', score: '8.1 CGPA' }, { degree: 'Intermediate (MPC)', institution: 'Sample Junior College', year: '2021', score: '92%' }],
-    certifications: ['Python programming certificate (online course)', 'SQL for data analysis certificate'], achievements: ['Finalist, college hackathon 2024'], totalYears: 0,
-  });
-  Object.assign(prof, { noticePeriod: 'Immediate', relocate: true, workAuth: 'Yes', expectedMin: 400000, expectedMax: 700000, workModes: ['hybrid', 'remote', 'onsite'], employmentTypes: ['full_time'], preferredRoles: ['Python Developer', 'Full Stack Developer'], preferredLocations: 'Hyderabad, Bengaluru, Remote', demo: true });
-  Store.apply({});
-  S.profile = prof;
-  S.prefs = { ...parsePrefsLocal('Find entry-level Full Stack Developer and Python Developer jobs in Hyderabad, Bengaluru and remote India. I know Python, PHP, JavaScript, React, MySQL and REST APIs. I am targeting ₹4–7 LPA and prefer companies offering fresher opportunities.'), engine: 'local', savedAt: ago(20), demo: true };
-  const rText = resumeText(profileAsTailored(prof), prof);
-  const r = { id: uid('r'), filename: 'Sample_Candidate_Resume.pdf', kind: 'pdf', uploadedAt: ago(21), text: rText, sizeBytes: rText.length, immutable: true, demo: true }; r.hash = await sha256(rText); S.resumes[r.id] = r;
-  const days = [19, 18, 16, 15, 14, 13, 9, 17, 16];
-  for (let i = 0; i < DEMO_JDS.length; i++) {
-    const [target, url, jd] = DEMO_JDS[i]; const f = extractJobLocal(jd, url); const t0 = days[i];
-    const j = { id: uid('j'), ...f, description: jd, applyUrl: url, source: ['linkedin', 'naukri', 'careers', 'indeed', 'linkedin', 'naukri', 'internshala', 'wellfound', 'foundit'][i], externalId: '', discoveredAt: ago(t0), postedAt: ago(t0 + 2).slice(0, 10), stage: 'Discovered', history: [{ from: null, to: 'Discovered', t: ago(t0), by: 'Job Discovery Agent', evidence: 'Sample data' }], extractEngine: 'local', app: {}, demo: true };
-    S.jobs[j.id] = j; j.match = scoreJob(j, prof, S.prefs, S.settings.weights);
-    const step = (to, d, extra = {}) => { j.history.push({ from: j.stage, to, t: ago(d), by: extra.by || 'You', evidence: extra.evidence || '', note: extra.note || '' }); j.stage = to; };
-    step('Analyzed', t0, { by: 'Job Matching Agent', note: `Score ${j.match.score}` });
-    if (['Analyzed'].includes(target)) continue;
-    step('Shortlisted', t0 - 1, { by: 'Application Agent' });
-    if (target === 'Shortlisted') continue;
-    const v = await tailorResume(j, { forceLocal: true }); v.createdAt = ago(t0 - 1); v.demo = true; j.app.versionId = v.id; step('ResumeGenerated', t0 - 1, { by: 'Resume Optimization Agent', note: `v1, ATS ${v.coverage}%` });
-    await prepareApplication(j); step('AwaitingApproval', t0 - 1, { by: 'Application Agent', note: 'Stopped for your approval' });
-    if (target === 'AwaitingApproval') continue;
-    j.app.approval = { hash: await snapshotHash(j), approvedAt: ago(t0 - 2), expiresAt: ago(t0 - 9), by: 'You' };
-    step('Approved', t0 - 2, { evidence: 'Explicit user approval' }); step('SubmissionInProgress', t0 - 2, { note: 'Opened official application page' });
-    const ref = 'APP-' + (48210 + i * 37); j.app.submission = { at: ago(t0 - 2), reference: ref, note: 'Confirmation email received' }; step('Applied', t0 - 2, { evidence: 'Confirmation email', note: 'Reference ' + ref });
-    step('UnderReview', t0 - 5, { evidence: 'Job portal status' });
-    if (target === 'EmployerRejected') { j.app.feedback = { text: 'We moved ahead with candidates who have production Next.js experience.', source: 'Rejection email', confirmed: true }; step('EmployerRejected', t0 - 8, { evidence: 'Rejection email' }); j.app.rejectionAnalysis = { at: ago(t0 - 8), engine: 'local', report: rejectionLocal(j) }; continue; }
-    j.app.recruiter = { name: 'Recruiter (sample)', email: 'talent@example.com', phone: '', notes: '' };
-    step('EmployerShortlisted', t0 - 7, { evidence: 'Recruiter email' });
-    const ivAt = target === 'InterviewScheduled' ? new Date(Date.now() + 3 * 86400000 + 4 * 3600e3) : new Date(Date.now() - (t0 - 10) * 86400000);
-    ivAt.setMinutes(0, 0, 0); if (target === 'InterviewScheduled') ivAt.setHours(11);
-    j.app.interviews = [{ id: uid('i'), at: ivAt.toISOString(), type: target === 'InterviewScheduled' ? 'Technical round' : 'Technical + HR', notes: target === 'InterviewScheduled' ? 'Video call; live coding in PHP and SQL' : '' }];
-    step('InterviewScheduled', t0 - 8, { evidence: 'Interview invitation' });
-    j.app.shortlistAnalysis = { at: ago(t0 - 7), engine: 'local', report: shortlistLocal(j) };
-    if (target === 'InterviewScheduled') continue;
-    j.app.offer = i === 7 ? { fixed: 650000, variable: 50000, joiningBonus: 50000, benefits: 'Health insurance for family, remote work allowance, learning budget', location: 'Remote', joiningDate: isoDay(new Date(Date.now() + 25 * 86400000)), deadline: isoDay(new Date(Date.now() + 5 * 86400000)) } : { fixed: 620000, variable: 0, joiningBonus: 0, benefits: 'Health insurance, cab facility, 24 days leave', location: 'Bengaluru', joiningDate: isoDay(new Date(Date.now() + 30 * 86400000)), deadline: isoDay(new Date(Date.now() + 7 * 86400000)) };
-    step('OfferReceived', t0 - 12, { evidence: 'Offer letter' });
-  }
-  Object.values(S.jobs).forEach(j => { j.updatedAt = j.history[j.history.length - 1].t; });
-  Object.values(S.versions).forEach(v => v.demo = true);
-  S.logs = [{ id: uid('l'), t: ago(0.1), agent: 'Orchestrator', action: 'Loaded sample workspace', detail: `${DEMO_JDS.length} sample jobs across every stage`, engine: 'local', status: 'ok' }];
-  S.notifs = [{ id: uid('n'), t: ago(0.1), type: 'AwaitingApproval', message: 'Kitebyte Labs: Awaiting approval — Junior Python Developer', jobId: Object.values(S.jobs)[0].id, read: false }, { id: uid('n'), t: ago(0.2), type: 'InterviewScheduled', message: 'Orbitlane Systems: Technical round in 3 days', jobId: Object.values(S.jobs)[3].id, read: false }];
-  S.reports = [buildReport('weekly')];
+/* ============ Live job search ============ */
+const REMOTE_GAP_MS = 6 * 3600e3;   // the remote job feeds ask not to be polled often
+function searchLabel(run) {
+  if (run.phase === 'details') return `Reading ${run.total} job description${run.total === 1 ? '' : 's'}…`;
+  if (run.phase === 'remote') return 'Checking remote job feeds…';
+  return `Reading company career boards${run.board ? ' · ' + run.board.name : ''}…`;
 }
-async function enterDemo() { S.mode = 'demo'; await buildDemo(); }
-function persistAll() {
-  save.profile(); save.prefs(); save.settings(); save.meta(); save.logs(); save.notifs(); save.chat(); save.reports(); if (S.notify) save.notify();
-  Object.values(S.jobs).forEach(save.job); Object.values(S.versions).forEach(save.version); Object.values(S.resumes).forEach(save.resume);
+function paintSearchProgress() {
+  const run = S.ui.searching; if (!run) return;
+  const bar = $('#search-bar'), label = $('#search-label'), count = $('#search-count');
+  if (bar) bar.style.transform = `scaleX(${run.total ? Math.max(0.02, run.done / run.total) : 0.02})`;
+  if (label) label.textContent = searchLabel(run);
+  if (count) count.textContent = run.total ? `${run.done}/${run.total}` : '';
+}
+/** Searches the live job boards from this browser, adds new matches and flags saved roles that have closed. */
+async function runLiveSearch({ quiet = false } = {}) {
+  if (S.ui.searching) return null;
+  if (!S.prefs || !(S.prefs.titles || []).length) { toast('Say what job you want first, so the search knows what to look for.', 'bad'); go('preferences'); return null; }
+  const n = S.notify || DEFAULT_NOTIFY(); const boards = n.feeds.ats === false ? [] : boardsFor(n);
+  const last = { ...((S.meta && S.meta.remoteAt) || {}) };
+  const due = k => !last[k] || Date.now() - new Date(last[k]) > REMOTE_GAP_MS;
+  const remote = {}; for (const k of Object.keys(REMOTE_NAME)) remote[k] = n.feeds[k] === false ? false : due(k) ? true : null;
+  S.ui.searching = { phase: 'boards', done: 0, total: boards.length }; render();
+  let res;
+  try {
+    res = await discoverJobs({ prefs: S.prefs, profile: S.profile, weights: S.settings.weights, boards, remote, existing: Object.values(S.jobs), maxNew: 60, onProgress: ev => { S.ui.searching = { ...S.ui.searching, ...ev }; paintSearchProgress(); } });
+  } catch (e) { S.ui.searching = null; render(); toast('The search could not finish: ' + ((e && e.message) || e), 'bad'); return null; }
+  const t = nowISO();
+  for (const j of res.fresh) { S.jobs[j.id] = j; save.job(j); }
+  for (const id of res.closed) { const j = S.jobs[id]; if (!j) continue; j.closed = true; j.closedAt = t; save.job(j); if (j.stage === 'AwaitingApproval' || j.stage === 'Approved') notify('closed', `${j.company} has closed “${j.title}”. It can no longer be applied to.`, j.id); }
+  for (const id of res.verified) { const j = S.jobs[id]; if (!j) continue; const stale = !j.verifiedOpenAt || Date.now() - new Date(j.verifiedOpenAt) > 12 * 3600e3; if (j.closed) { j.closed = false; delete j.closedAt; j.verifiedOpenAt = t; save.job(j); } else if (stale) { j.verifiedOpenAt = t; save.job(j); } }
+  for (const k of Object.keys(remote)) if (remote[k] === true && res.stats.remote[k] === 'ok') last[k] = t;
+  S.meta = { ...S.meta, remoteAt: last, search: { at: t, stats: res.stats, newIds: res.fresh.map(j => j.id), closedIds: res.closed } }; save.meta();
+  logAgent('Job Discovery Agent', 'Searched open roles', `${res.stats.boardsOk}/${res.stats.boards} company boards, ${res.stats.listed} open roles read, ${res.fresh.length} new, ${res.closed.length} closed${res.stats.failed.length ? `, ${res.stats.failed.length} board(s) unreachable` : ''}`);
+  S.ui.searching = null; render();
+  if (!quiet) toast(res.fresh.length ? `${res.fresh.length} new open role${res.fresh.length === 1 ? '' : 's'} added${res.closed.length ? ` · ${res.closed.length} closed` : ''}.` : `No new matches in ${res.stats.listed.toLocaleString('en-IN')} open roles${res.closed.length ? ` · ${res.closed.length} saved role${res.closed.length === 1 ? '' : 's'} closed` : ''}.`);
+  return res;
+}
+/** One-time clean-up: earlier versions offered a sample workspace. Anything it saved is removed. */
+function purgeSampleData() {
+  let n = 0; const drop = (kind, id) => { delete S[kind][id]; Store.put(kind + '/' + id, null); n++; };
+  Object.values(S.jobs).filter(j => j.demo || j.source === 'demo').forEach(j => drop('jobs', j.id));
+  Object.values(S.versions).filter(v => v.demo || (n && !S.jobs[v.jobId])).forEach(v => drop('versions', v.id));
+  Object.values(S.resumes).filter(r => r.demo).forEach(r => drop('resumes', r.id));
+  if (S.profile && S.profile.demo) { S.profile = null; Store.put('profile', null); n++; }
+  if (S.prefs && S.prefs.demo) { S.prefs = null; Store.put('prefs', null); n++; }
+  if (!n) return 0;
+  S.logs = []; S.notifs = []; S.reports = []; if (S.meta) { delete S.meta.offerAnalysis; delete S.meta.keptDemo; }
+  save.notifs(); save.reports(); save.meta();
+  logAgent('Orchestrator', 'Removed sample data', `${n} sample record(s) from an earlier version were deleted`);
+  return n;
 }
 
 /* ============ Click actions ============ */
@@ -307,28 +298,27 @@ ACT['notifs-read'] = () => { S.notifs.forEach(n => n.read = true); save.notifs()
 ACT['modal-bg'] = () => closeModal(false);
 ACT['dlg-yes'] = () => { const i = $('#dlg-input'); closeModal(i ? i.value : true); };
 ACT['dlg-no'] = () => closeModal(false);
-ACT['demo-start-own'] = () => { if (CLOUD && !S.session) return goAuth(); const th = S.settings.theme; Store.apply({}); S.settings.theme = th; S.mode = S.realMode; S.meta = { onboarded: true, at: nowISO() }; save.meta(); toast('Fresh workspace ready. Upload your resume to begin.'); go('resumes'); };
-ACT['demo-keep'] = () => { if (CLOUD && !S.session) return goAuth(); S.mode = S.realMode; S.meta = { onboarded: true, at: nowISO(), keptDemo: true }; persistAll(); toast(S.mode === 'db' ? 'Sample data saved to your account. Remove it any time in Configuration.' : 'Sample data kept.'); render(); };
-ACT['demo-load'] = async () => {
-  if (S.mode === 'demo') return toast('Sample data is already loaded.');
-  if ((S.profile && S.profile.name && !S.profile.demo) || Object.keys(S.jobs).length) {
-    if (!await confirmDialog({ title: 'Add sample jobs?', body: '<p>Your profile and jobs stay as they are. Nine sample jobs are added and scored against your profile, marked “Sample”.</p>', ok: 'Add sample jobs' })) return;
-    for (const [, url, jd] of DEMO_JDS) { const f = extractJobLocal(jd, url); const j = { id: uid('j'), ...f, description: jd, applyUrl: url, source: 'demo', discoveredAt: nowISO(), stage: 'Discovered', history: [{ from: null, to: 'Discovered', t: nowISO(), by: 'Job Discovery Agent', evidence: 'Sample data' }], extractEngine: 'local', app: {}, demo: true }; S.jobs[j.id] = j; scoreAndStore(j); }
-    toast('Sample jobs added.'); return go('jobs');
-  }
-  const keep = S.settings; await buildDemo(); S.settings = keep; S.meta = { onboarded: true, keptDemo: true }; persistAll(); toast('Sample workspace loaded.'); go('dashboard');
+ACT.skip = () => { const c = $('#content'); if (c) c.focus(); };
+ACT['to-top'] = () => { const m = $('#main'); if (m) m.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); };
+ACT['find-jobs'] = async () => { const r = await runLiveSearch(); if (r && r.fresh.length && route().view === 'dashboard') go('jobs'); };
+ACT['board-remove'] = el => {
+  const n = S.notify || (S.notify = DEFAULT_NOTIFY()); const ats = el.dataset.ats, token = el.dataset.token; const key = boardKey({ ats, token });
+  const mine = String(n.companies[ats] || '').split(/[\s,]+/).filter(Boolean);
+  if (mine.some(x => x.toLowerCase() === token.toLowerCase())) n.companies[ats] = mine.filter(x => x.toLowerCase() !== token.toLowerCase()).join('\n');
+  if (BOARD_DIRECTORY.some(([a, t]) => boardKey({ ats: a, token: t }) === key)) n.boardsOff = uniq([...(n.boardsOff || []), key]);
+  save.notify(); render();
 };
-ACT['demo-remove'] = async () => {
-  if (!await confirmDialog({ title: 'Remove sample records?', body: '<p>Deletes every job, resume version and resume marked “Sample”, plus the sample profile if it is still in use.</p>', ok: 'Remove sample records', danger: true })) return;
-  let n = 0;
-  Object.values(S.jobs).filter(j => j.demo).forEach(j => { delete S.jobs[j.id]; Store.put('jobs/' + j.id, null); n++; });
-  Object.values(S.versions).filter(v => v.demo || !S.jobs[v.jobId]).forEach(v => { delete S.versions[v.id]; Store.put('versions/' + v.id, null); });
-  Object.values(S.resumes).filter(r => r.demo).forEach(r => { delete S.resumes[r.id]; Store.put('resumes/' + r.id, null); });
-  if (S.profile && S.profile.demo) { S.profile = null; Store.put('profile', null); }
-  if (S.prefs && S.prefs.demo) { S.prefs = null; Store.put('prefs', null); }
-  if (S.mode === 'demo') { S.mode = S.realMode; S.meta = { onboarded: true }; save.meta(); }
-  logAgent('Orchestrator', 'Removed sample records', `${n} jobs`); toast(`Removed ${n} sample jobs.`); render();
+ACT['boards-restore'] = () => { const n = S.notify || (S.notify = DEFAULT_NOTIFY()); n.boardsOff = []; n.useDirectory = true; save.notify(); toast('Suggested companies restored.'); render(); };
+ACT['feed-toggle'] = el => { const n = S.notify || (S.notify = DEFAULT_NOTIFY()); n.feeds[el.dataset.feed] = el.checked; save.notify(); };
+ACT['verify-open'] = async el => {
+  const j = S.jobs[el.dataset.id]; let open;
+  try { open = await Busy.local(`Checking ${j.company}’s careers board…`, () => checkJobOpen(j)); } catch (e) { return toast(`Couldn’t reach ${j.company}’s careers board (${(e && e.message) || 'error'}). Open the posting to check it yourself.`, 'bad'); }
+  if (open === null) return toast('This source can’t be checked automatically. Open the posting to confirm it is still accepting applications.');
+  if (open) { j.closed = false; delete j.closedAt; j.verifiedOpenAt = nowISO(); toast('Still open: the role is listed on the company’s careers board.'); }
+  else { j.closed = true; j.closedAt = nowISO(); toast('This role is no longer listed. It has been marked closed.', 'bad'); }
+  save.job(j); render();
 };
+ACT['mark-open'] = el => { const j = S.jobs[el.dataset.id]; j.closed = false; j.expired = false; delete j.closedAt; save.job(j); logAgent('Job Discovery Agent', 'Marked open by you', `${j.title} @ ${j.company}`); render(); };
 ACT['chat-suggest'] = el => chatSend(el.dataset.msg);
 ACT['chat-clear'] = () => { if (S.ui.chatBusy) return; S.chat = []; save.chat(); render(); };
 ACT['chat-stop'] = () => { if (_chatCtl) _chatCtl.abort(); };
@@ -378,20 +368,20 @@ ACT['edit-job'] = el => { const j = S.jobs[el.dataset.id]; openModal(`<h2>Edit j
 ACT['run-workflow'] = async el => { const j = S.jobs[el.dataset.id]; if (await runWorkflow(j)) { toast('Prepared and stopped for your approval. Nothing has been sent.'); go('approvals'); } };
 ACT.stage = el => { const j = S.jobs[el.dataset.id]; const to = el.dataset.to; if (to === 'Shortlisted' && (j.stage === 'Discovered' || !j.match)) scoreAndStore(j); if (to === 'AwaitingApproval' && j.app) j.app.approval = null; moveStage(j, to); render(); };
 ACT.tailor = async el => {
-  const j = S.jobs[el.dataset.id]; if (!ensureProfile()) return;
+  const j = S.jobs[el.dataset.id]; if (!ensureProfile() || !ensureOpen(j)) return;
   if (j.stage === 'Analyzed' || j.stage === 'Discovered') { if (j.stage === 'Discovered') scoreAndStore(j); moveStage(j, 'Shortlisted', { silent: true }); }
   const v = await tailorResume(j); j.app = j.app || {}; j.app.versionId = v.id;
   if (j.stage === 'Shortlisted') moveStage(j, 'ResumeGenerated', { by: 'Resume Optimization Agent', note: `v${v.version}, ATS ${v.coverage}%`, silent: true }); else { save.job(j); await invalidateIfChanged(j, 'the resume was regenerated'); }
   S.ui.tab[j.id] = 'resume'; toast(`Resume v${v.version} ready · ATS coverage ${v.coverage}%`); render();
 };
-ACT.prepare = async el => { const j = S.jobs[el.dataset.id]; await prepareApplication(j); moveStage(j, 'AwaitingApproval', { by: 'Application Agent', note: 'Stopped for your approval' }); toast('Application prepared. Review it before anything is sent.'); go('approvals'); };
+ACT.prepare = async el => { const j = S.jobs[el.dataset.id]; if (!ensureOpen(j)) return; await prepareApplication(j); moveStage(j, 'AwaitingApproval', { by: 'Application Agent', note: 'Stopped for your approval' }); toast('Application prepared. Review it before anything is sent.'); go('approvals'); };
 function saveAnswersFrom(j) {
   const f = document.querySelector(`form[data-form="answers"][data-id="${j.id}"]`); if (!f || j.stage !== 'AwaitingApproval') return false; let changed = false;
   (j.app.answers || []).forEach(a => { const el = f.querySelector(`[name="${a.id}"]`); if (!el) return; const v = el.value.trim(); if (v !== a.a) { a.a = v; a.evidence = v ? 'Entered by you' : ''; a.draft = false; changed = true; } a.needsInput = a.required && !a.a; });
   if (changed) save.job(j); return changed;
 }
 ACT.approve = async el => {
-  const j = S.jobs[el.dataset.id]; saveAnswersFrom(j);
+  const j = S.jobs[el.dataset.id]; saveAnswersFrom(j); if (!ensureOpen(j)) return;
   const need = j.app.answers.filter(a => a.required && !a.a.trim()); if (need.length) { render(); return toast(`Answer ${need.length} required question(s) first: ${need.map(a => a.q).slice(0, 3).join('; ')}`, 'bad'); }
   if (!S.versions[j.app.versionId]) return toast('Generate a tailored resume first.', 'bad');
   const drafts = j.app.answers.filter(a => a.draft && a.a);
@@ -405,7 +395,7 @@ ACT['reject-app'] = async el => { const j = S.jobs[el.dataset.id]; if (!await co
 ACT.unapprove = el => { const j = S.jobs[el.dataset.id]; j.app.approval = null; moveStage(j, 'AwaitingApproval', { note: 'Approval revoked' }); render(); };
 ACT['add-custom'] = async el => { const j = S.jobs[el.dataset.id]; saveAnswersFrom(j); const ta = $('#ans-custom-' + j.id); const qs = (ta ? ta.value : '').split('\n').map(s => s.trim()).filter(Boolean); if (!qs.length) return toast('Type the employer’s questions first, one per line.'); await answerExtra(j, qs); render(); };
 ACT.submit = async el => {
-  const j = S.jobs[el.dataset.id];
+  const j = S.jobs[el.dataset.id]; if (!ensureOpen(j)) return;
   if (j.stage === 'Approved') { const st = await approvalState(j); if (!st.ok) { j.app.approval = null; moveStage(j, 'AwaitingApproval', { by: 'System', note: 'Approval invalid: ' + st.why }); toast(st.why + '. Approve it again.', 'bad'); return render(); } }
   const v = S.versions[j.app.versionId];
   openModal(`<h2>Submit: ${esc(j.title)} at ${esc(j.company)}</h2>
@@ -472,15 +462,15 @@ ACT.export = async () => { const data = { exportedAt: nowISO(), profile: S.profi
 ACT['delete-all'] = async () => {
   const v = await confirmDialog({ title: 'Delete all your data?', body: '<p>Your profile, original resumes, every job, resume version, application, analysis, chat and log are permanently deleted.</p>', ok: 'Delete everything', danger: true, input: { label: 'Type DELETE to confirm', placeholder: 'DELETE' } });
   if (v !== 'DELETE') { if (v !== false) toast('Nothing deleted. Type DELETE exactly.'); return; }
-  if (S.mode !== 'demo') { try { await Store.deleteAll(); } catch (e) { return toast('Delete failed: ' + (e.message || e), 'bad'); } }
-  const th = S.settings.theme; Store.apply({}); S.settings.theme = th; S.meta = { onboarded: true }; if (S.mode === 'demo') S.mode = S.realMode; save.meta(); toast('All data deleted.'); go('dashboard');
+  try { await Store.deleteAll(); } catch (e) { return toast('Delete failed: ' + (e.message || e), 'bad'); }
+  const th = S.settings.theme; Store.apply({}); S.settings.theme = th; toast('All data deleted.'); go('dashboard');
 };
 
 /* ============ Forms ============ */
 const FORM = {};
 FORM['quick-chat'] = f => { const m = f.msg.value; f.msg.value = ''; chatSend(m); };
 FORM.chat = f => { const m = f.msg.value; f.msg.value = ''; chatSend(m); };
-FORM.profile = f => { const p = collectProfile(f); if (p.experienceLevel === undefined) p.experienceLevel = levelFor(candidateYears(p)); p.updatedAt = nowISO(); delete p.demo; S.profile = p; S.ui.draft = null; save.profile(); rescoreAll(); logAgent('Career Profile Agent', 'Updated profile', `${p.skills.length} skills, ${p.projects.length} projects`); Object.values(S.jobs).filter(j => j.stage === 'Approved').forEach(j => invalidateIfChanged(j, 'your profile changed')); toast('Profile saved. Jobs re-scored.'); render(); };
+FORM.profile = f => { const p = collectProfile(f); if (p.experienceLevel === undefined) p.experienceLevel = levelFor(candidateYears(p)); p.updatedAt = nowISO(); S.profile = p; S.ui.draft = null; save.profile(); rescoreAll(); logAgent('Career Profile Agent', 'Updated profile', `${p.skills.length} skills, ${p.projects.length} projects`); Object.values(S.jobs).filter(j => j.stage === 'Approved').forEach(j => invalidateIfChanged(j, 'your profile changed')); toast('Profile saved. Jobs re-scored.'); render(); };
 FORM['paste-resume'] = async f => { const t = f.text.value; if (!t.trim()) return; await storeResume('Pasted resume.txt', 'txt', t, t.length); };
 FORM['prefs-nl'] = async f => {
   const text = f.text.value.trim(); if (!text) return toast('Describe the job you want first.');
@@ -494,8 +484,21 @@ FORM['prefs-edit'] = f => {
   const fd = new FormData(f); const g = k => String(fd.get(k) ?? '').trim(); const n = k => g(k) === '' ? null : +g(k);
   const base = S.ui.prefDraft || S.prefs || {};
   const p = { ...base, titles: splitList(g('titles')), skills: splitList(g('skills')).map(canonSkill), locations: splitList(g('locations')).map(x => /remote/i.test(x) ? 'Remote' : canonCity(x)), expMin: n('expMin'), expMax: n('expMax'), salaryMin: g('salMin') === '' ? null : Math.round(+g('salMin') * 1e5), salaryMax: g('salMax') === '' ? null : Math.round(+g('salMax') * 1e5), workModes: fd.getAll('workModes'), employmentTypes: fd.getAll('employmentTypes'), companyTypes: splitList(g('companyTypes')), industries: splitList(g('industries')), other: g('other'), currency: 'INR', period: 'year', savedAt: nowISO() };
-  p.ambiguities = prefAmbiguities(p); delete p.demo;
+  p.ambiguities = prefAmbiguities(p);
   S.prefs = p; S.ui.prefDraft = null; save.prefs(); rescoreAll(); logAgent('Career Profile Agent', 'Saved job preferences', p.titles.join(', ')); toast('Preferences saved. Jobs re-scored and search links updated.'); render();
+};
+FORM['board-add'] = async f => {
+  const raw = f.board.value.trim(); if (!raw) return toast('Paste the company’s careers link, or type its board name.', 'bad');
+  const ref = parseBoardRef(raw, f.ats.value || '');
+  if (!ref) return toast(f.ats.value ? 'That doesn’t look like a board name. Use the word that follows the careers site address, for example “razorpay”.' : 'Paste a Greenhouse, Lever, Ashby or SmartRecruiters careers link, or pick the system and type the board name.', 'bad');
+  const n = S.notify || (S.notify = DEFAULT_NOTIFY()); const key = boardKey(ref);
+  if (boardsFor(n).some(b => boardKey(b) === key)) return toast('That company is already on your list.');
+  let res; try { res = await Busy.local(`Checking ${prettyToken(ref.token)} on ${ATS_NAME[ref.ats]}…`, () => FEEDS[ref.ats].list({ ...ref, name: '' })); } catch (e) { return toast(`No public ${ATS_NAME[ref.ats]} board answers at “${ref.token}” (${(e && e.message) || 'error'}). Check the link.`, 'bad'); }
+  const inIndia = res.items.filter(c => candidateGeo(c).india).length;
+  n.boardsOff = (n.boardsOff || []).filter(k => k !== key);
+  if (!BOARD_DIRECTORY.some(([a, t]) => boardKey({ ats: a, token: t }) === key)) n.companies[ref.ats] = uniqCI([...String(n.companies[ref.ats] || '').split(/[\s,]+/).filter(Boolean), ref.token]).join('\n');
+  save.notify(); f.reset(); logAgent('Job Discovery Agent', 'Added company board', `${ATS_NAME[ref.ats]} · ${ref.token}: ${res.items.length} open roles`);
+  toast(`Added ${prettyToken(ref.token)}: ${res.items.length} open role${res.items.length === 1 ? '' : 's'}${ref.ats === 'smartrecruiters' ? ' in India' : `, ${inIndia} in India`}.`); render();
 };
 FORM['import-job'] = async f => { const created = await importJobs(f.url.value.trim(), f.text.value); if (created.length) { f.reset(); toast(`Imported ${created.length} job${created.length > 1 ? 's' : ''}.`); go(created.length === 1 ? 'job-' + created[0].id : 'jobs'); } };
 FORM['job-filter'] = f => { const fd = new FormData(f); Object.assign(S.ui.filter, { q: String(fd.get('q') || ''), minScore: +fd.get('minScore') || 0, status: String(fd.get('status')), sort: String(fd.get('sort')) }); render(); };
@@ -505,7 +508,7 @@ FORM['settings-weights'] = f => { const fd = new FormData(f); Object.keys(COMP_L
 FORM['edit-job'] = async f => {
   const j = S.jobs[f.dataset.id]; const fd = new FormData(f); const g = k => String(fd.get(k) ?? '').trim();
   Object.assign(j, { title: g('title') || j.title, company: g('company') || j.company, location: g('location'), applyUrl: g('applyUrl'), workMode: g('workMode') || null, salaryMin: g('smin') === '' ? null : Math.round(+g('smin') * 1e5), salaryMax: g('smax') === '' ? null : Math.round(+g('smax') * 1e5), expMin: g('emin') === '' ? null : +g('emin'), expMax: g('emax') === '' ? null : +g('emax'), deadline: g('deadline'), requiredSkills: splitList(g('req')).map(canonSkill), preferredSkills: splitList(g('pref')).map(canonSkill), education: g('education') });
-  if (['adzuna', 'remotive', 'greenhouse', 'lever', 'demo'].indexOf(j.source) < 0) { j.source = detectSource(j.applyUrl) === 'manual' ? j.source : detectSource(j.applyUrl); j.externalId = externalId(j.applyUrl) || j.externalId; }
+  if (!ATS_NAME[j.source] && !REMOTE_NAME[j.source] && j.source !== 'adzuna') { j.source = detectSource(j.applyUrl) === 'manual' ? j.source : detectSource(j.applyUrl); j.externalId = externalId(j.applyUrl) || j.externalId; }
   const desc = g('desc'); if (desc && desc !== j.description) { const ex = extractJobLocal(desc, j.applyUrl); j.description = desc; j.snippet = false; ['requiredSkills', 'preferredSkills', 'responsibilities'].forEach(k => { if (ex[k] && ex[k].length) j[k] = ex[k]; }); if (!g('education') && ex.education) j.education = ex.education; if (j.salaryMin == null && ex.salaryMin != null) { j.salaryMin = ex.salaryMin; j.salaryMax = ex.salaryMax; } if (j.expMin == null && ex.expMin != null) { j.expMin = ex.expMin; j.expMax = ex.expMax; } }
   j.match = scoreJob(j, S.profile, S.prefs, S.settings.weights); save.job(j); closeModal();
   if (j.stage === 'Approved') { j.app.approval = null; moveStage(j, 'AwaitingApproval', { by: 'System', note: 'Approval cleared: job details changed' }); }
@@ -547,6 +550,7 @@ document.addEventListener('click', async e => {
   if (!el) return; const act = el.dataset.act;
   if (act === 'modal-bg' && e.target !== el) return;
   const fn = ACT[act]; if (!fn) return;
+  if (!el.closest('#modal-root')) window._trigger = el;   // where focus goes back to when a dialog closes
   if (el.tagName === 'A' && !el.getAttribute('href')) e.preventDefault();
   if (el.tagName === 'BUTTON') el.disabled = true;
   try { await fn(el, e); } catch (err) { if (!(err && err.code === 'cancelled')) { console.error(err); toast((err && err.message) || 'Something went wrong.', 'bad'); } }
@@ -560,6 +564,8 @@ document.addEventListener('submit', async e => {
 });
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && $('#modal-root').innerHTML && !Busy.ctl) closeModal(false);
+  else if (e.key === 'Escape' && S.ui.notifOpen) { S.ui.notifOpen = false; render(); const bell = $('[data-act=notifs]'); if (bell) bell.focus(); }
+  else if (e.key === 'Escape' && $('#rail') && $('#rail').classList.contains('open')) { $('#rail').classList.remove('open'); const mb = $('.menu-btn'); if (mb) mb.focus(); }
   if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.job-card[data-act], .kcard[data-act]')) { e.preventDefault(); e.target.click(); }
   if (e.key === 'Enter' && !e.shiftKey && e.target.id === 'chat-in') { e.preventDefault(); e.target.form.requestSubmit(); }
 });
