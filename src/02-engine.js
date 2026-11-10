@@ -33,6 +33,19 @@ const SKILL_DEFS = [
   ['Agile', 'Concept', 'agile|scrum|kanban'], ['MVC', 'Concept', 'mvc'], ['Responsive Design', 'Concept', 'responsive design|responsive web design|mobile-first'], ['SEO', 'Concept', 'seo'],
   ['ETL', 'Concept', 'etl|data pipelines|data pipeline'], ['Apache Spark', 'Concept', 'apache spark|pyspark', 'Spark'], ['Kafka', 'Concept', 'kafka'], ['RabbitMQ', 'Concept', 'rabbitmq'],
   ['WebSockets', 'Concept', 'websockets|websocket|socket.io'], ['JWT', 'Concept', 'jwt|json web token'], ['OAuth', 'Concept', 'oauth|oauth2'],
+  ['Android', 'Framework', 'android|android sdk|android development'], ['iOS', 'Framework', 'ios development|ios sdk', 'iOS'], ['SwiftUI', 'Framework', 'swiftui'], ['Jetpack Compose', 'Framework', 'jetpack compose'],
+  ['Objective-C', 'Language', 'objective-c|objective c'], ['MATLAB', 'Language', 'matlab'], ['Perl', 'Language', 'perl'], ['Elixir', 'Language', 'elixir'], ['Solidity', 'Language', 'solidity'],
+  ['NestJS', 'Framework', 'nestjs|nest.js'], ['Nuxt', 'Framework', 'nuxt|nuxt.js'], ['Remix', 'Framework', 'remix.run'], ['Electron', 'Framework', 'electron.js|electronjs'], ['Three.js', 'Library', 'three.js|threejs'],
+  ['gRPC', 'Concept', 'grpc'], ['Snowflake', 'Database', '', 'Snowflake'], ['BigQuery', 'Database', 'bigquery|big query'], ['Redshift', 'Database', 'redshift'], ['Cassandra', 'Database', 'cassandra'],
+  ['ClickHouse', 'Database', 'clickhouse'], ['Supabase', 'Database', 'supabase'], ['NoSQL', 'Concept', 'nosql|no-sql'], ['Hadoop', 'Concept', 'hadoop|hdfs'], ['Hive', 'Concept', 'apache hive', 'Hive'],
+  ['Airflow', 'Tool', 'airflow|apache airflow'], ['dbt', 'Tool', '', 'dbt'], ['Databricks', 'Tool', '', 'Databricks'], ['Looker', 'Tool', 'looker|looker studio'], ['SAP', 'Tool', '', 'SAP'],
+  ['Salesforce', 'Tool', 'salesforce crm|salesforce development|apex', 'Salesforce'], ['ServiceNow', 'Tool', '', 'ServiceNow'], ['Photoshop', 'Tool', 'photoshop|adobe photoshop'], ['Illustrator', 'Tool', 'adobe illustrator', 'Illustrator'],
+  ['Ansible', 'DevOps', 'ansible'], ['Helm', 'DevOps', 'helm charts', 'Helm'], ['Prometheus', 'DevOps', 'prometheus'], ['Grafana', 'DevOps', 'grafana'], ['ArgoCD', 'DevOps', 'argocd|argo cd'],
+  ['Maven', 'Tool', 'maven'], ['Gradle', 'Tool', 'gradle'], ['Cypress', 'Tool', 'cypress'], ['Appium', 'Tool', 'appium'], ['TestNG', 'Tool', 'testng'], ['Storybook', 'Tool', 'storybook'],
+  ['Hugging Face', 'Library', 'hugging face|huggingface'], ['Transformers', 'Concept', 'transformer models|transformers library'], ['RAG', 'Concept', 'retrieval augmented generation|retrieval-augmented generation', 'RAG'],
+  ['Prompt Engineering', 'Concept', 'prompt engineering'], ['MLOps', 'Concept', 'mlops|ml ops'], ['Statistics', 'Concept', 'statistics|statistical analysis|statistical modeling|statistical modelling'],
+  ['A/B Testing', 'Concept', 'a/b testing|ab testing|a/b tests'], ['Distributed Systems', 'Concept', 'distributed systems|distributed computing'], ['Design Patterns', 'Concept', 'design patterns'],
+  ['API Design', 'Concept', 'api design'], ['Accessibility', 'Concept', 'web accessibility|wcag|a11y'], ['Performance Optimization', 'Concept', 'performance optimization|performance optimisation|performance tuning'],
   ['Manual Testing', 'Concept', 'manual testing'], ['Automation Testing', 'Concept', 'automation testing|test automation'], ['Communication', 'Soft skill', 'communication skills|communication'],
   ['Problem Solving', 'Soft skill', 'problem solving|problem-solving'], ['Teamwork', 'Soft skill', 'teamwork|team player|collaboration'],
 ];
@@ -98,22 +111,44 @@ function parseSalary(t) {
   if (m) { const v = Math.round(+m[1] * 1e5); return { min: v, max: v }; }
   return { min: null, max: null };
 }
+const EXP_NOISE = /founded|since (19|20)\d\d|years? ago|years? old|anniversar|in business|over the (past|last)|for (over|more than) \d+ years,? (we|our|the company)|\d+\+? years? (of )?(history|heritage|legacy)/i;
+function expFromText(t) {
+  let m = t.match(/(\d+(?:\.\d+)?)\s*(?:-|–|—|to)\s*(\d+(?:\.\d+)?)\s*\+?\s*(?:years?|yrs?)/i); if (m && +m[1] <= +m[2] && +m[2] < 40) return { min: +m[1], max: +m[2] };
+  m = t.match(/(\d+(?:\.\d+)?)\s*\+\s*(?:years?|yrs?)/i); if (m && +m[1] < 40) return { min: +m[1], max: null };
+  m = t.match(/(?:minimum|at least|min\.?|atleast)\s*(?:of\s*)?(\d+(?:\.\d+)?)\s*(?:years?|yrs?)/i); if (m && +m[1] < 40) return { min: +m[1], max: null };
+  m = t.match(/(?:up ?to|under|less than|maximum of)\s*(\d+(?:\.\d+)?)\s*(?:years?|yrs?)/i); if (m && +m[1] < 40) return { min: 0, max: +m[1] };
+  m = t.match(/(\d+(?:\.\d+)?)\s*(?:years?|yrs?)\s*(?:of\s*)?(?:relevant\s*|professional\s*|industry\s*|work\s*|hands[- ]on\s*)*(?:experience|exp\b)/i); if (m && +m[1] < 40) return { min: +m[1], max: null };
+  return null;
+}
 function parseExperience(t) {
   t = String(t || '');
-  let m = t.match(/(\d+(?:\.\d+)?)\s*(?:-|–|—|to)\s*(\d+(?:\.\d+)?)\s*\+?\s*(?:years?|yrs?)/i); if (m) return { min: +m[1], max: +m[2] };
-  m = t.match(/(\d+(?:\.\d+)?)\s*\+\s*(?:years?|yrs?)/i); if (m) return { min: +m[1], max: null };
-  m = t.match(/(?:minimum|at least|min\.?)\s*(?:of\s*)?(\d+(?:\.\d+)?)\s*(?:years?|yrs?)/i); if (m) return { min: +m[1], max: null };
-  if (/\bfreshers?\b|entry[- ]level|graduate trainee|0\s*years?|no experience/i.test(t)) return { min: 0, max: /\bfreshers?\b/i.test(t) ? 1 : 2 };
-  m = t.match(/(\d+(?:\.\d+)?)\s*(?:years?|yrs?)\s*(?:of\s*)?(?:experience|exp)/i); if (m) return { min: +m[1], max: null };
-  return { min: null, max: null };
+  const fresher = () => /\bfreshers?\b|entry[- ]level|graduate trainee|\b0\s*years?|no (prior |previous )?experience|recent graduates?|new grads?/i.test(t) ? { min: 0, max: /\bfreshers?\b/i.test(t) ? 1 : 2 } : null;
+  if (t.length < 300) return expFromText(t) || fresher() || { min: null, max: null };
+  // Long text (a full posting): only trust lines that are about the candidate's experience.
+  const lines = t.split(/\n|(?<=[.;!?])\s+/).filter(l => /\d/.test(l) && /years?|yrs?/i.test(l) && !EXP_NOISE.test(l));
+  const about = lines.filter(l => /experience|\bexp\b|professional|hands[- ]on|working (with|in|on|as)|industry|background|relevant|proven|track record|expertise|years? (of|in) /i.test(l));
+  for (const l of about) { const r = expFromText(l); if (r) return r; }
+  return fresher() || { min: null, max: null };
 }
-const DEG = [[5, /ph\.?\s?d|doctorate/i], [4, /m\.?\s?tech|m\.?e\.?\b|master|mca|mba|m\.?\s?sc|m\.?s\.?\b|post[- ]?graduate|pgdm/i], [3, /b\.?\s?tech|b\.?\s?e\b|b\.e\.|bachelor|bca|b\.?\s?sc|b\.?\s?com|b\.?\s?s\b|graduate|graduation|degree/i], [2, /diploma|polytechnic/i], [1, /12th|xii|class\s*12|intermediate|hsc|senior secondary|higher secondary|puc\b|pre-university/i], [0, /10th|class\s*10|class\s*x\b|ssc|matriculation|secondary school|cbse|icse/i]];
-function degreeLevel(t) { t = String(t || ''); for (const [lv, re] of DEG) if (re.test(t)) return lv; return null; }
+const DEG = [
+  [5, /ph\.?\s?d\b|doctorate|doctoral/i],
+  [4, /m\.?\s?tech\b|master|\bmca\b|\bmba\b|m\.?\s?sc\b|post[- ]?graduat|\bpgdm\b|\bm\.e\b|\bm\.s\b/i, /\bM\.?E\.?(?![a-z])|\bM\.?S\.?(?![a-z])/],
+  [3, /b\.?\s?tech\b|bachelor|\bbca\b|b\.?\s?sc\b|b\.?\s?com\b|\bbba\b|undergraduate|graduation|\bgraduate\b|\bdegree\b|\bb\.e\b|\bb\.s\b/i, /\bB\.?E\.?(?![a-z])|\bB\.?S\.?(?![a-z])|\bB\.?A\.?(?![a-z])/],
+  [2, /diploma|polytechnic/i],
+  [1, /12th|\bxii\b|class\s*12|intermediate|\bhsc\b|senior secondary|higher secondary|\bpuc\b|pre-university/i],
+  [0, /10th|class\s*10|class\s*x\b|\bssc\b|matriculation|secondary school|\bcbse\b|\bicse\b/i],
+];
+function degreeLevels(t) { t = String(t || ''); return DEG.filter(([, re, cs]) => re.test(t) || (cs && cs.test(t))).map(x => x[0]); }
+function degreeLevel(t) { const l = degreeLevels(t); return l.length ? Math.max(...l) : null; }
 const DEG_NAME = { 5: 'Doctorate', 4: "Master's", 3: "Bachelor's", 2: 'Diploma', 1: 'Class 12', 0: 'Class 10' };
+// A line such as "Bachelor's or Master's degree" asks for the lower of the two.
 function jobEduLevel(job) {
   const t = job.education || ''; if (!t) return null;
-  if (/any graduate|any degree/i.test(t)) return 3; return degreeLevel(t);
+  if (/any graduate|any degree/i.test(t)) return 3;
+  const l = degreeLevels(t).filter(x => x >= 2); return l.length ? Math.min(...l) : null;
 }
+const EDU_REQ = /bachelor|master'?s|b\.?\s?tech\b|m\.?\s?tech\b|\bmca\b|\bbca\b|b\.?\s?sc\b|m\.?\s?sc\b|\bmba\b|ph\.?\s?d\b|degree (in|or|from)|(university|college|engineering|graduate|undergraduate|technical|relevant|equivalent) degree|any graduate|any degree|diploma in|\bb\.e\b|\bm\.e\b/i;
+const EDU_REQ_CS = /\bB\.?E\.?(?![a-z])|\bB\.?S\.?(?![a-z])|\bM\.?S\.?(?![a-z])|\bBTech\b|\bMTech\b/;
 const MONTHS = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, sept: 8, oct: 9, nov: 10, dec: 11 };
 const DATE_TOK = '(?:(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\\.?\\s*[\'’]?\\d{2,4}|\\d{1,2}\\/\\d{2,4}|\\d{4})';
 const DATE_RANGE = new RegExp('(' + DATE_TOK + ')\\s*(?:-|–|—|to|till)\\s*(' + DATE_TOK + '|present|current|now|till date|ongoing)', 'i');
@@ -190,7 +225,7 @@ function parseResumeLocal(text) {
   const experiences = expEntries.filter(e => e.head.length).map(e => {
     const head = e.head.join(' | '); const dm = head.match(DATE_RANGE);
     const start = dm ? isoMonth(parseDateTok(dm[1])) : ''; const endRaw = dm ? dm[2] : ''; const end = /present|current|now|till|ongoing/i.test(endRaw) ? '' : isoMonth(parseDateTok(endRaw));
-    const parts = head.replace(DATE_RANGE, '').split(/\s+(?:at|@)\s+|\s*[|,–—]\s*|\s+-\s+/).map(s => s.trim()).filter(s => s && s.length > 1 && !/^\(?\)?$/.test(s) && !detectCities(s).length || (s && s.length > 20));
+    const parts = head.replace(DATE_RANGE, '').replace(/[(\[]\s*[)\]]/g, ' ').split(/\s+(?:at|@)\s+|\s*[|,–—]\s*|\s+-\s+/).map(s => s.trim()).filter(s => s && s.length > 1 && !/^\(?\)?$/.test(s) && !detectCities(s).length || (s && s.length > 20));
     let role = parts.find(p => ROLE_RE.test(p)) || parts[0] || ''; let employer = parts.find(p => p !== role && !DATE_RANGE.test(p) && !/^\d/.test(p)) || '';
     return { id: uid('x'), employer: employer.slice(0, 80), role: role.slice(0, 80), start, end, current: dm ? /present|current|now|till|ongoing/i.test(endRaw) : false, description: e.body.join('\n').slice(0, 1500) };
   }).slice(0, 8);
@@ -323,10 +358,13 @@ function prefAmbiguities(p) {
 
 /* ============ Job platforms & discovery links ============ */
 const PLATFORMS = [
+  { id: 'boards', name: 'Company career boards', status: 'Connected', note: 'Greenhouse, Lever, Ashby and SmartRecruiters publish each company’s open roles through a public API. Searched live from your browser; every job links to the employer’s own application page.' },
+  { id: 'remote', name: 'Remotive and Remote OK', status: 'Connected', note: 'Public remote-job APIs. Only roles open to India or worldwide are kept; each links back to the original listing.' },
+  { id: 'adzuna', name: 'Adzuna', status: 'Limited', note: 'India-wide search through the scheduled server job. Needs your free Adzuna key in GitHub secrets (README).' },
   { id: 'linkedin', name: 'LinkedIn', status: 'Manual', note: 'LinkedIn prohibits unauthorized scraping and automated applications. Open the search, then import jobs by link and description.' },
   { id: 'naukri', name: 'Naukri', status: 'Manual', note: 'No public API for individual job seekers. Use the search link, then import.' },
   { id: 'indeed', name: 'Indeed', status: 'Manual', note: 'Partner APIs are for employers and ATS vendors. Search, then import.' },
-  { id: 'careers', name: 'Company career pages', status: 'Limited', note: 'Greenhouse, Lever and Workable boards are found through the search link; import each posting by URL and description.' },
+  { id: 'careers', name: 'Other company career pages', status: 'Manual', note: 'Workday, Workable and custom career sites: import each posting by link and description.' },
   { id: 'internshala', name: 'Internshala', status: 'Manual', note: 'Search, then import.' },
   { id: 'wellfound', name: 'Wellfound', status: 'Manual', note: 'Startup roles. Search, then import.' },
   { id: 'foundit', name: 'Foundit', status: 'Manual', note: 'Search, then import.' },
@@ -357,9 +395,10 @@ function detectSource(url) {
   const u = String(url || '').toLowerCase();
   if (u.includes('linkedin.')) return 'linkedin'; if (u.includes('naukri.')) return 'naukri'; if (u.includes('indeed.')) return 'indeed'; if (u.includes('internshala.')) return 'internshala';
   if (u.includes('wellfound.') || u.includes('angel.co')) return 'wellfound'; if (u.includes('foundit.') || u.includes('monsterindia')) return 'foundit';
+  if (u.includes('greenhouse.io')) return 'greenhouse'; if (u.includes('lever.co')) return 'lever'; if (u.includes('ashbyhq.com')) return 'ashby'; if (u.includes('smartrecruiters.com')) return 'smartrecruiters';
   if (u) return 'careers'; return 'manual';
 }
-const SOURCE_NAME = { adzuna: 'Adzuna', remotive: 'Remotive', greenhouse: 'Greenhouse', lever: 'Lever', linkedin: 'LinkedIn', naukri: 'Naukri', indeed: 'Indeed', internshala: 'Internshala', wellfound: 'Wellfound', foundit: 'Foundit', careers: 'Company career page', manual: 'Manual entry', demo: 'Sample data' };
+const SOURCE_NAME = { adzuna: 'Adzuna', remotive: 'Remotive', greenhouse: 'Greenhouse', lever: 'Lever', linkedin: 'LinkedIn', naukri: 'Naukri', indeed: 'Indeed', internshala: 'Internshala', wellfound: 'Wellfound', foundit: 'Foundit', careers: 'Company career page', manual: 'Manual entry' };
 function normalizeUrl(url) {
   if (!url) return '';
   try {
@@ -371,15 +410,12 @@ function normalizeUrl(url) {
 }
 function externalId(url) {
   const u = String(url || '');
-  const m = u.match(/linkedin\.com\/jobs\/view\/(?:[^/?]*-)?(\d{6,})/i) || u.match(/currentJobId=(\d+)/i) || u.match(/[?&](?:jk|vjk)=([a-f0-9]+)/i) || u.match(/naukri\.com\/.*-(\d{9,})/i) || u.match(/greenhouse\.io\/.*\/jobs\/(\d+)/i) || u.match(/gh_jid=(\d+)/i) || u.match(/lever\.co\/[^/]+\/([0-9a-f-]{36})/i) || u.match(/workable\.com\/.*\/j\/([A-Z0-9]+)/i);
+  const m = u.match(/linkedin\.com\/jobs\/view\/(?:[^/?]*-)?(\d{6,})/i) || u.match(/currentJobId=(\d+)/i) || u.match(/[?&](?:jk|vjk)=([a-f0-9]+)/i) || u.match(/naukri\.com\/.*-(\d{9,})/i) || u.match(/greenhouse\.io\/.*\/jobs\/(\d+)/i) || u.match(/gh_jid=(\d+)/i) || u.match(/lever\.co\/[^/]+\/([0-9a-f-]{36})/i) || u.match(/ashbyhq\.com\/[^/]+\/([0-9a-f-]{36})/i) || u.match(/smartrecruiters\.com\/[^/]+\/(\d{6,})/i) || u.match(/workable\.com\/.*\/j\/([A-Z0-9]+)/i);
   return m ? m[1] : '';
 }
 const normText = s => String(s || '').toLowerCase().replace(/\b(pvt|private|ltd|limited|inc|llp|technologies|technology|solutions|software|india)\b/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
 function fingerprint(j) { return normText(j.title) + '|' + normText(j.company) + '|' + normText((detectCities(j.location)[0] || j.location || '')); }
-function findDuplicate(j, excludeId) {
-  const nu = normalizeUrl(j.applyUrl), ex = j.externalId || externalId(j.applyUrl), fp = fingerprint(j);
-  return Object.values(S.jobs).find(o => o.id !== excludeId && ((nu && normalizeUrl(o.applyUrl) === nu) || (ex && (o.externalId || externalId(o.applyUrl)) === ex && o.source === j.source) || (fp.split('|')[0] && fingerprint(o) === fp)));
-}
+function findDuplicate(j, excludeId) { return findDuplicateIn(j, Object.values(S.jobs), excludeId); }
 
 /* ============ Job description extraction (local engine) ============ */
 function extractJobLocal(text, url = '') {
@@ -398,21 +434,53 @@ function extractJobLocal(text, url = '') {
   if (!location && workMode === 'remote') location = 'Remote';
   const sal = parseSalary(field(/^(?:salary|ctc|compensation|package|stipend|pay)\s*[:\-–]\s*(.+)$/i) || raw);
   const exp = parseExperience(field(/^(?:experience|exp)\s*(?:required)?\s*[:\-–]\s*(.+)$/i) || raw);
-  // sections
-  const SEC = [['req', /^(requirements?|required|must[- ]have|qualifications?|what (we'?re|we are) looking for|who you are|skills( required)?|key skills|eligibility|desired (skills|profile)|technical skills|basic qualifications|minimum qualifications|you have)\b/i],
-    ['pref', /^(preferred|nice[- ]to[- ]have|good[- ]to[- ]have|bonus( points)?|plus|preferred qualifications|added advantage|it would be great)\b/i],
-    ['resp', /^((key |job |role & |roles and )?responsibilit(y|ies)|what you('| wi)ll do|your role|the role|job description|duties|day[- ]to[- ]day|you will)\b/i]];
-  const buckets = { req: [], pref: [], resp: [], other: [] }; let cur = 'other';
-  for (const l of lines) { const clean = l.replace(BULLET_RE, '').replace(/[:]\s*$/, ''); const h = clean.length < 60 && SEC.find(([, re]) => re.test(clean)); if (h) { cur = h[0]; const rest = l.split(/:\s*/).slice(1).join(': '); if (rest && rest.length > 3) buckets[cur].push(rest); continue; } buckets[cur].push(l); }
-  // inline "preferred/nice to have" sentences inside requirement lists
-  const inlinePref = []; buckets.req = buckets.req.filter(l => { if (/\b(preferred|nice to have|good to have|is a plus|an advantage|bonus|added advantage)\b/i.test(l)) { inlinePref.push(l); return false; } return true; });
-  buckets.other = buckets.other.filter(l => { if (/\b(preferred|nice to have|good to have|is a plus|an advantage|bonus)\b/i.test(l)) { inlinePref.push(l); return false; } return true; });
-  const prefSkills = uniqCI(detectSkills([...buckets.pref, ...inlinePref].join('\n')));
-  let reqSkills = uniqCI(detectSkills(buckets.req.join('\n'))).filter(s => !prefSkills.includes(s));
-  const otherSkills = detectSkills(buckets.other.join('\n') + '\n' + buckets.resp.join('\n')).filter(s => !reqSkills.includes(s) && !prefSkills.includes(s));
+  // sections: a heading switches the bucket that the following lines fall into
+  const SEC = [
+    ['pref', /^(preferred|nice[- ]to[- ]haves?|good[- ]to[- ]haves?|bonus( points)?|desirable|desired|what (will|would) make you stand out|stand[- ]?out|extra credit|brownie points|even better|added advantage|it would be great|pluses|plus\b|additional qualifications?|great to have|we'?d also love)/i],
+    ['req', /^(requirements?|required|must[- ]haves?|qualifications?|minimum (qualifications?|requirements?)|basic (qualifications?|requirements?)|what (we'?re|we are) looking for|who (you are|we'?re looking for|we are looking for|you'?ll be)|what you('ll| will)? (need|bring|have)|what you should have|you (have|bring|are|should have|will have|might be|may be)|about you|your (skills|experience|profile|background|expertise|qualifications)|skills?( required| needed| and experience| & experience| and qualifications)?|key skills|eligibility|desired (skills|profile)|technical (skills|requirements)|experience (and|&) skills|candidate (persona|profile|requirements)|ideal candidate|essentials?|we'?d love (to hear from you if|you to have)|you('ll| will) (need|bring|have)|required (skills|qualifications|experience)|education)\b/i],
+    ['resp', /^((key |job |role & |roles and |roles & |your |core |primary )?responsibilit(y|ies)|what you('ll| will) (do|be doing|own|work on|achieve|be working on)|what (you'll|you will) be responsible for|your (role|impact|mission|day)|the (role|job|opportunity|position|team|work)|about the (role|job|position|team|opportunity)|role( overview| description| summary| expectations)?|job (description|summary|overview)|position (summary|overview)|duties|day[- ]to[- ]day|in this role|you will|key result areas|overview)\b/i],
+    ['skip', /^(about (us|the company)|about [A-Z][\w.&-]*$|who we are|our (story|mission|culture|values|team|company)|company (description|overview)|why (join|work|us|you'll love)|what we offer|what'?s in it for you|benefits|perks|compensation|pay (range|transparency)|salary range|equal opportunity|eeo|diversity|life at|additional information|how to apply|hiring process|interview process|disclaimer|privacy|recruitment fraud)\b/i],
+  ];
+  const kindOf = txt => { for (const [k, re] of SEC) if (re.test(txt)) return k; return null; };
+  const headKind = line => {
+    if (BULLET_RE.test(line) || /^[.·]\s/.test(line)) return null;
+    const clean = line.replace(/[:：]\s*$/, '').trim();
+    if (clean.length > 80 || clean.split(/\s+/).length > 11 || /[.!?;,]$/.test(clean)) return null;
+    const paren = (clean.match(/\(([^)]{3,60})\)\s*$/) || [])[1] || '';
+    return (paren && kindOf(paren)) || kindOf(clean.replace(/\s*\([^)]*\)\s*$/, ''));
+  };
+  const buckets = { req: [], pref: [], resp: [], other: [], skip: [] }; let cur = 'other';
+  for (const l0 of lines) {
+    const l = l0.replace(/[‘’]/g, "'").replace(/[“”]/g, '"');
+    const h = headKind(l); if (h) { cur = h; continue; }
+    const lab = l.match(/^([A-Za-z][A-Za-z' ()&\/-]{2,44}):\s+(\S.+)$/); const lk = lab && !BULLET_RE.test(l) && kindOf(lab[1].trim());
+    if (lk) { cur = lk; buckets[cur].push(lab[2]); continue; }
+    buckets[cur].push(l);
+  }
+  // "preferred / nice to have" sentences that sit inside a requirements list
+  const PREF_INLINE = /\b(preferred|nice to have|good to have|is a plus|a plus|an advantage|bonus|added advantage|desirable|not (required|mandatory))\b/i;
+  const inlinePref = []; buckets.req = buckets.req.filter(l => { if (PREF_INLINE.test(l)) { inlinePref.push(l); return false; } return true; });
+  buckets.other = buckets.other.filter(l => { if (PREF_INLINE.test(l)) { inlinePref.push(l); return false; } return true; });
+  const hard = t => detectSkills(t).filter(k => skillCat(k) !== 'Soft skill');
+  // Skills joined by "or" or "/" (or introduced by "one of", "such as") are alternatives: one of them is enough.
+  const units = line => {
+    const all = hard(line); if (all.length < 2) return all.map(k => [k]);
+    if (/\b(one|any) (or more )?of\b|at least one|such as|e\.g\.?|\blike\b|or (similar|equivalent|related|comparable|other|another|any other)/i.test(line)) return [all];
+    const out = [];
+    for (const seg of line.split(/,|;|\band\b|&/i)) { const sk = hard(seg); if (sk.length > 1 && /\bor\b|\//i.test(seg)) out.push(sk); else sk.forEach(k => out.push([k])); }
+    return out;
+  };
+  const prefSkills = uniqCI(hard([...buckets.pref, ...inlinePref].join('\n')));
+  const reqUnits = buckets.req.flatMap(units);
+  let reqSkills = uniqCI(reqUnits.flat()).filter(k => !prefSkills.includes(k));
+  const otherSkills = hard(buckets.other.join('\n') + '\n' + buckets.resp.join('\n')).filter(k => !reqSkills.includes(k) && !prefSkills.includes(k));
   if (!reqSkills.length) reqSkills = otherSkills.splice(0, 8);
-  const finalPref = uniqCI([...prefSkills, ...otherSkills]).filter(s => skillCat(s) !== 'Soft skill').slice(0, 12);
-  const eduLine = lines.find(l => /b\.?\s?tech|b\.?e\b|bachelor|degree|graduate|mca|m\.?tech|master|diploma|bca|b\.?sc/i.test(l)) || '';
+  reqSkills = reqSkills.slice(0, 16);
+  const seenG = new Set(); const skillGroups = [];
+  for (const u of reqUnits) { const g = uniqCI(u).filter(k => reqSkills.includes(k) && !seenG.has(k)); if (g.length > 1) { skillGroups.push(g); g.forEach(k => seenG.add(k)); } }
+  const finalPref = uniqCI([...prefSkills, ...otherSkills]).slice(0, 12);
+  const eduPool = [...buckets.req, ...buckets.pref, ...inlinePref, ...buckets.other, ...buckets.resp];
+  const eduLine = eduPool.find(l => l.length < 260 && (EDU_REQ.test(l) || EDU_REQ_CS.test(l))) || '';
   const responsibilities = buckets.resp.map(l => l.replace(BULLET_RE, '')).filter(l => l.length > 12).slice(0, 12);
   const deadlineM = raw.match(/(?:apply by|last date(?: to apply)?|deadline|closing date)\s*[:\-–]?\s*([0-9]{1,2}[\s\-/][A-Za-z0-9]{2,9}[\s\-/][0-9]{2,4}|[A-Za-z]{3,9}\s+\d{1,2},?\s+\d{4})/i);
   let deadline = ''; if (deadlineM) { const d = new Date(deadlineM[1].replace(/-/g, ' ')); if (!isNaN(d)) deadline = isoDay(d); }
@@ -420,7 +488,7 @@ function extractJobLocal(text, url = '') {
   return {
     title, company: company || 'Unknown company', location: location || '', workMode: workMode || null,
     salaryMin: sal.min, salaryMax: sal.max, expMin: exp.min, expMax: exp.max,
-    requiredSkills: reqSkills.slice(0, 14), preferredSkills: finalPref, education: eduLine.replace(BULLET_RE, '').slice(0, 200), responsibilities,
+    requiredSkills: reqSkills, skillGroups, preferredSkills: finalPref, education: eduLine.replace(BULLET_RE, '').slice(0, 200), responsibilities,
     employmentType: emp[0] || 'full_time', deadline, postedAt: '',
   };
 }
@@ -450,12 +518,19 @@ function category(score) { return score >= 85 ? { k: 'ex', label: 'Excellent mat
 function scoreJob(job, profile, prefs, weights) {
   const p = profile || {}; const pr = prefs || {}; const W = weights || DEFAULT_WEIGHTS;
   const have = lcSet(profileSkillNames(p));
-  const req = uniqCI((job.requiredSkills || []).map(canonSkill)), pref = uniqCI((job.preferredSkills || []).map(canonSkill)).filter(s => !req.includes(s));
-  const reqM = req.filter(s => have.has(s.toLowerCase())), prefM = pref.filter(s => have.has(s.toLowerCase()));
+  const hardOnly = s => skillCat(s) !== 'Soft skill';
+  const req = uniqCI((job.requiredSkills || []).map(canonSkill)).filter(hardOnly), pref = uniqCI((job.preferredSkills || []).map(canonSkill)).filter(s => hardOnly(s) && !req.includes(s));
+  const has = s => have.has(s.toLowerCase());
+  const reqM = req.filter(has), prefM = pref.filter(has);
+  // Alternatives ("Java, Go or Python") are one requirement: any one of them satisfies it.
+  const groups = (job.skillGroups || []).map(g => uniqCI(g.map(canonSkill)).filter(s => req.includes(s))).filter(g => g.length > 1);
+  const grouped = new Set(groups.flat()); const singles = req.filter(s => !grouped.has(s));
+  const nReq = singles.length + groups.length, nReqM = singles.filter(has).length + groups.filter(g => g.some(has)).length;
+  const altNote = groups.length ? ' (alternatives count once)' : '';
   const C = {};
   // K
-  if (req.length && pref.length) C.K = { v: 100 * (0.75 * reqM.length / req.length + 0.25 * prefM.length / pref.length), note: `${reqM.length}/${req.length} required and ${prefM.length}/${pref.length} preferred skills matched` };
-  else if (req.length) C.K = { v: 100 * reqM.length / req.length, note: `${reqM.length}/${req.length} required skills matched` };
+  if (nReq && pref.length) C.K = { v: 100 * (0.75 * nReqM / nReq + 0.25 * prefM.length / pref.length), note: `${nReqM}/${nReq} required${altNote} and ${prefM.length}/${pref.length} preferred skills matched` };
+  else if (nReq) C.K = { v: 100 * nReqM / nReq, note: `${nReqM}/${nReq} required skills matched${altNote}` };
   else if (pref.length) C.K = { v: 50 + 50 * prefM.length / pref.length, note: `No mandatory skills listed; ${prefM.length}/${pref.length} preferred matched` };
   else C.K = { v: 60, note: 'The posting lists no specific skills', unknown: true };
   // E
@@ -498,8 +573,7 @@ function scoreJob(job, profile, prefs, weights) {
   else if (!jobCities.length) C.L = { v: 70, note: 'Location not stated', unknown: true };
   else if (!locs.length && !modes.length) C.L = { v: 70, note: 'Set preferred locations to score this', unknown: true };
   else if (jobCities.some(c => prefCities.includes(c))) {
-    const onlyRemote = modes.length && modes.every(m => m === 'remote');
-    C.L = { v: onlyRemote ? 55 : 100, note: `${jobCities.join(', ')} is a preferred location${job.workMode ? ' (' + job.workMode + ')' : ''}` };
+    C.L = { v: 100, note: `${jobCities.join(', ')} is a preferred location${job.workMode ? ' (' + job.workMode + ')' : ''}` };
   } else if (p.relocate) C.L = { v: 65, note: `${jobCities.join(', ')} is not preferred, but you are open to relocating` };
   else C.L = { v: 20, note: `${jobCities.join(', ')} is outside your preferred locations` };
   // C
@@ -521,7 +595,7 @@ function scoreJob(job, profile, prefs, weights) {
   if (reqM.length) strengths.push(`Matches required skills: ${reqM.join(', ')}`);
   if (projRel[0] && projRel[0].rel >= 50) strengths.push(`Project "${projRel[0].name}" uses ${projRel[0].hits.join(', ')}`);
   if (C.E.v === 100) strengths.push(C.E.note); if (C.L.v === 100) strengths.push(C.L.note); if (C.C.v === 100 && !C.C.unknown) strengths.push(C.C.note);
-  const missReq = req.filter(s => !have.has(s.toLowerCase())), missPref = pref.filter(s => !have.has(s.toLowerCase()));
+  const missReq = [...singles.filter(s => !has(s)), ...groups.filter(g => !g.some(has)).map(g => g[0])], missPref = pref.filter(s => !has(s));
   if (missReq.length) weaknesses.push(`Missing required: ${missReq.join(', ')}`);
   if (C.E.v < 70) weaknesses.push(C.E.note); if (C.L.v < 50) weaknesses.push(C.L.note); if (C.C.v < 60) weaknesses.push(C.C.note); if (C.Q.v < 60 && !C.Q.unknown) weaknesses.push(C.Q.note);
   if (C.P.v < 40) weaknesses.push('Projects show little use of this role’s stack');

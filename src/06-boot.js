@@ -1,7 +1,4 @@
 /* ============ Boot ============ */
-const AUTH_CSS = `.auth-wrap{min-height:100%;display:grid;place-items:center;padding:24px 16px}.auth-card{width:min(440px,100%);background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px 24px;display:flex;flex-direction:column;gap:14px;box-shadow:var(--shadow)}.auth-card h1{font-size:22px}.auth-card a{cursor:pointer}`;
-(() => { const st = document.createElement('style'); st.textContent = AUTH_CSS; document.head.appendChild(st); })();
-
 window.addEventListener('hashchange', () => {
   const r = route();
   if (r.view === 'job' && S.jobs[r.id] && S.jobs[r.id].fresh) { S.jobs[r.id].fresh = false; save.job(S.jobs[r.id]); }

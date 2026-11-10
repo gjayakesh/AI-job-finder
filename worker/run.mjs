@@ -1,12 +1,12 @@
 // AI Career Agent — scheduled server job (runs on GitHub Actions every 30 minutes, free).
-// 1) Links Telegram chats  2) Discovers new jobs from free, legal sources and scores them
+// 1) Links Telegram chats  2) Searches public job boards for open roles, scores them and flags saved roles that have closed
 // 3) Works out what needs your attention  4) Sends alerts by Telegram, email and browser push
 // 5) Writes alerts, new jobs and a status report back to your Supabase database.
 import webpush from 'web-push';
 import * as E from './engine.mjs';
 
 const env = process.env;
-const VERSION = '1.0.0';
+const VERSION = '2.0.0';
 const SB_URL = (env.SUPABASE_URL || '').replace(/\/+$/, '');
 const SB_KEY = env.SUPABASE_SERVICE_ROLE_KEY || '';
 const APP_URL = (env.APP_URL || '').replace(/#.*$/, '');
@@ -18,14 +18,15 @@ const MAIL_FROM = env.ALERT_FROM_EMAIL || 'AI Career Agent <onboarding@resend.de
 const VAPID_PUB = env.VAPID_PUBLIC_KEY || '', VAPID_PRIV = env.VAPID_PRIVATE_KEY || '', VAPID_SUBJECT = env.VAPID_SUBJECT || 'mailto:alerts@example.com';
 const ADZ_ID = env.ADZUNA_APP_ID || '', ADZ_KEY = env.ADZUNA_APP_KEY || '';
 const ADZ_API = env.ADZUNA_API || 'https://api.adzuna.com/v1/api/jobs/in/search/1';
-const REMOTIVE_API = env.REMOTIVE_API || 'https://remotive.com/api/remote-jobs';
-const GH_API = (env.GREENHOUSE_API || 'https://boards-api.greenhouse.io/v1/boards').replace(/\/+$/, '');
-const LEVER_API = (env.LEVER_API || 'https://api.lever.co/v0/postings').replace(/\/+$/, '');
+// The job-board feeds live in engine.mjs (shared with the website). Tests point them at a mock.
+for (const [k, v] of Object.entries({ greenhouse: env.GREENHOUSE_API, lever: env.LEVER_API, ashby: env.ASHBY_API, smartrecruiters: env.SMARTRECRUITERS_API, remotive: env.REMOTIVE_API, remoteok: env.REMOTEOK_API })) if (v) E.FEED_API[k] = v.replace(/\/+$/, '');
+if (env.BOARD_DIRECTORY_JSON) E.BOARD_DIRECTORY.splice(0, E.BOARD_DIRECTORY.length, ...JSON.parse(env.BOARD_DIRECTORY_JSON));
 const FORCE = env.FORCE_DISCOVERY === 'true';
 const DRY = env.DRY_RUN === 'true';
 const NOW = env.NOW_OVERRIDE ? new Date(env.NOW_OVERRIDE) : new Date();
 const H = 3600e3, DAY = 24 * H;
-const UA = 'AI-Career-Agent/1.0 (personal job alerts)';
+const UA = 'AI-Career-Agent/2.0 (personal job alerts)';
+E.FEED_OPTS.headers = { Accept: 'application/json', 'User-Agent': UA };
 
 if (!SB_URL || !SB_KEY) { console.error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY secret. See README step 7.'); process.exit(1); }
 const PUSH_OK = !!(VAPID_PUB && VAPID_PRIV);
@@ -35,8 +36,7 @@ if (PUSH_OK) webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUB, VAPID_PRIV);
 const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const htmlEsc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const decodeEntities = s => String(s || '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&nbsp;/g, ' ').replace(/&#(\d+);/g, (m, n) => String.fromCharCode(+n)).replace(/&amp;/g, '&');
-const htmlToText = h => decodeEntities(String(h || '').replace(/<\s*(br|\/p|\/li|\/h\d|\/div)\s*\/?>/gi, '\n').replace(/<li[^>]*>/gi, '\n- ').replace(/<[^>]+>/g, ' ')).replace(/[ \t]+/g, ' ').replace(/\n\s*\n\s*/g, '\n').trim();
+const htmlToText = E.htmlToText;
 const hash = s => { let h1 = 0x811c9dc5; for (let i = 0; i < s.length; i++) { h1 ^= s.charCodeAt(i); h1 = Math.imul(h1, 16777619); } return (h1 >>> 0).toString(36); };
 const jobUrl = id => APP_URL ? `${APP_URL}#job-${id}` : '';
 const pageUrl = p => APP_URL ? `${APP_URL}#${p}` : '';
@@ -73,7 +73,7 @@ async function upsert(uid, docs) {
 async function pruneAlerts(uid) { if (DRY) return; await sb(`docs?user_id=eq.${uid}&kind=eq.alerts&updated_at=lt.${new Date(NOW - 45 * DAY).toISOString()}`, { method: 'DELETE', prefer: 'return=minimal' }); }
 
 /* ---------------- settings ---------------- */
-const DEFAULT_NOTIFY = { email: '', emailOn: false, telegramOn: false, telegramChatId: '', telegramCode: '', pushOn: true, pushSubs: [], events: { newJobs: true, interviews: true, deadlines: true, approvals: true, followups: true, digest: true, weekly: true }, minScore: 70, digestHour: 9, tz: 'Asia/Kolkata', feeds: { adzuna: true, remotive: true, ats: true }, companies: { greenhouse: '', lever: '' }, testAt: null };
+const DEFAULT_NOTIFY = { email: '', emailOn: false, telegramOn: false, telegramChatId: '', telegramCode: '', pushOn: true, pushSubs: [], events: { newJobs: true, interviews: true, deadlines: true, approvals: true, followups: true, digest: true, weekly: true }, minScore: 70, digestHour: 9, tz: 'Asia/Kolkata', feeds: { adzuna: true, remotive: true, remoteok: true, ats: true }, companies: { greenhouse: '', lever: '', ashby: '', smartrecruiters: '' }, boardsOff: [], useDirectory: true, testAt: null };
 function notifyOf(U) { const n = U.single.notify || {}; return { ...DEFAULT_NOTIFY, ...n, events: { ...DEFAULT_NOTIFY.events, ...(n.events || {}) }, feeds: { ...DEFAULT_NOTIFY.feeds, ...(n.feeds || {}) }, companies: { ...DEFAULT_NOTIFY.companies, ...(n.companies || {}) } }; }
 function localParts(tz) {
   let f; try { f = new Intl.DateTimeFormat('en-GB', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', weekday: 'short', hour12: false }); } catch (e) { f = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', weekday: 'short', hour12: false }); }
@@ -108,31 +108,6 @@ async function linkTelegram(users) {
 }
 
 /* ---------------- Job discovery ---------------- */
-const GENERIC = new Set(['junior', 'senior', 'entry', 'level', 'trainee', 'associate', 'lead', 'the', 'and', 'of', 'i', 'ii', 'iii', 'fresher']);
-const ROLEWORD = new Set(['developer', 'engineer', 'analyst', 'intern', 'designer', 'programmer', 'specialist', 'consultant', 'architect', 'scientist', 'tester', 'administrator', 'manager']);
-function titleMatcher(prefs) {
-  const titles = (prefs.titles || []).map(t => t.toLowerCase());
-  const specific = new Set(), roles = new Set();
-  titles.forEach(t => t.split(/[^a-z0-9+#.]+/).filter(Boolean).forEach(w => { if (GENERIC.has(w)) return; if (ROLEWORD.has(w)) roles.add(w); else specific.add(w); }));
-  if (specific.has('full')) specific.add('fullstack'); if (specific.has('stack')) specific.add('fullstack');
-  const juniorOnly = prefs.expMax != null && prefs.expMax <= 2;
-  return title => {
-    const t = String(title || '').toLowerCase(); const words = new Set(t.split(/[^a-z0-9+#.]+/).filter(Boolean));
-    if (juniorOnly && /\b(senior|sr\.?|lead|principal|staff|manager|head|director|architect|vp)\b/.test(t)) return false;
-    const spec = [...specific].some(w => words.has(w) || t.includes(w + ' ') || t.includes(' ' + w));
-    const role = !roles.size || [...roles].some(w => words.has(w) || words.has(w + 's'));
-    return specific.size ? spec && (role || spec) : role;
-  };
-}
-const INDIA_OK = /india|worldwide|anywhere|global|asia|apac|remote$|^remote|emea\/apac/i;
-function locationOK(loc, prefs, remote) {
-  const l = String(loc || ''); const cities = (prefs.locations || []).filter(x => x !== 'Remote');
-  if (remote) return !l || INDIA_OK.test(l);
-  if (!l) return true;
-  if (E.detectCities(l).some(c => cities.includes(c))) return true;
-  if ((prefs.locations || []).includes('Remote') && /remote/i.test(l) && (INDIA_OK.test(l) || !/(us|usa|united states|canada|uk|europe|germany|emea)\b/i.test(l))) return true;
-  return !cities.length && /india/i.test(l);
-}
 function queries(prefs) {
   const titles = (prefs.titles || []).filter(t => !/^junior /i.test(t)).slice(0, 2); const cities = (prefs.locations || []).filter(l => l !== 'Remote').slice(0, 2);
   const out = []; titles.forEach(t => (cities.length ? cities : ['']).forEach(c => out.push({ what: t, where: c }))); return out.slice(0, 3);
@@ -150,77 +125,46 @@ async function fromAdzuna(prefs) {
   }
   return out;
 }
-async function fromRemotive() {
-  const u = new URL(REMOTIVE_API); u.searchParams.set('category', 'software-dev');
-  const j = await fetchJSON(u.toString());
-  return (j.jobs || []).map(r => ({ source: 'remotive', extId: r.id, title: r.title, company: r.company_name, location: r.candidate_required_location || 'Remote', remote: true, url: r.url, description: htmlToText(r.description) + (r.tags && r.tags.length ? '\nSkills: ' + r.tags.join(', ') : ''), postedAt: (r.publication_date || '').slice(0, 10), salaryText: r.salary || '', employmentType: r.job_type === 'contract' ? 'contract' : r.job_type === 'internship' ? 'internship' : r.job_type === 'part_time' ? 'part_time' : 'full_time' }));
-}
-async function fromGreenhouse(token) {
-  const j = await fetchJSON(`${GH_API}/${encodeURIComponent(token)}/jobs?content=true`);
-  const name = token.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-  return (j.jobs || []).map(r => ({ source: 'greenhouse', extId: r.id, title: r.title, company: r.company_name || name, location: (r.location && r.location.name) || '', url: r.absolute_url, description: htmlToText(decodeEntities(r.content || '')), postedAt: (r.first_published || r.updated_at || '').slice(0, 10) }));
-}
-async function fromLever(company) {
-  const j = await fetchJSON(`${LEVER_API}/${encodeURIComponent(company)}?mode=json`);
-  const name = company.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-  return (Array.isArray(j) ? j : []).map(r => ({ source: 'lever', extId: r.id, title: r.text, company: name, location: (r.categories && r.categories.location) || '', workMode: ['remote', 'hybrid', 'onsite'].includes(r.workplaceType) ? r.workplaceType : null, url: r.hostedUrl, description: [r.descriptionPlain, ...(r.lists || []).map(l => l.text + '\n' + htmlToText(l.content)), r.additionalPlain].filter(Boolean).join('\n'), postedAt: r.createdAt ? new Date(r.createdAt).toISOString().slice(0, 10) : '', employmentType: /intern/i.test((r.categories && r.categories.commitment) || '') ? 'internship' : /contract/i.test((r.categories && r.categories.commitment) || '') ? 'contract' : null }));
-}
-function toJob(c, profile, prefs, weights) {
-  const text = `${c.title}\nCompany: ${c.company}\nLocation: ${c.location}\n${c.salaryText ? 'Salary: ' + c.salaryText + '\n' : ''}${c.description}`;
-  const ex = E.extractJobLocal(text, c.url);
-  const t = NOW.toISOString();
-  const job = {
-    id: E.uid('j'), ...ex, title: c.title.slice(0, 120), company: c.company.slice(0, 80), location: c.location || ex.location,
-    workMode: c.workMode || (c.remote ? 'remote' : ex.workMode), salaryMin: c.salaryMin ?? ex.salaryMin, salaryMax: c.salaryMax ?? ex.salaryMax,
-    employmentType: c.employmentType || ex.employmentType, description: text.slice(0, 15000), applyUrl: c.url, source: c.source, externalId: String(c.extId),
-    postedAt: c.postedAt || '', discoveredAt: t, stage: 'Analyzed', extractEngine: 'server', app: {}, fresh: true, snippet: !!c.snippet, discoveredBy: 'server',
-  };
-  const scam = E.scamCheck(text); if (scam) { job.suspicious = true; job.suspiciousReason = scam; }
-  if (job.deadline && job.deadline < E.isoDay(NOW)) job.expired = true;
-  job.match = E.scoreJob(job, profile || {}, prefs || {}, weights);
-  job.match.engine = 'local';
-  job.history = [{ from: null, to: 'Discovered', t, by: 'Job Discovery Agent (server)', evidence: E.SOURCE_NAME[c.source] || c.source }, { from: 'Discovered', to: 'Analyzed', t, by: 'Job Matching Agent (server)', note: `Score ${job.match.score} (${job.match.category})` }];
-  job.updatedAt = t;
-  return job;
-}
+const FEED_KEYS = ['greenhouse', 'lever', 'ashby', 'smartrecruiters', 'remotive', 'remoteok', 'adzuna'];
+const NOTHING = () => ({ fresh: [], closed: [], reopened: [], verified: [] });
 async function discover(U, ctx) {
   const { n, prefs, profile, weights, state, status } = ctx;
   status.sources = { ...(status.sources || {}) };
-  if (!prefs || !(prefs.titles || []).length) { status.sources = { adzuna: 'waiting for job preferences', remotive: 'waiting for job preferences', greenhouse: 'waiting for job preferences', lever: 'waiting for job preferences' }; return []; }
+  if (!prefs || !(prefs.titles || []).length) { FEED_KEYS.forEach(k => { status.sources[k] = 'waiting for job preferences'; }); return NOTHING(); }
   const last = status.lastDiscoveryAt ? new Date(status.lastDiscoveryAt) : null;
-  if (!FORCE && last && NOW - last < 6 * H - 10 * 60e3) return [];
-  const cands = []; const disc = {};
-  const run = async (key, on, fn, okNote = 'ok') => {
-    if (!on) { status.sources[key] = 'off'; return; }
-    try { const r = await fn(); if (r === null) return; cands.push(...r); status.sources[key] = okNote; disc[key] = 0; }
-    catch (e) { status.sources[key] = 'error: ' + e.message; ctx.err(`${key}: ${e.message}`); }
-  };
-  await run('adzuna', n.feeds.adzuna, async () => { if (!ADZ_ID || !ADZ_KEY) { status.sources.adzuna = 'missing ADZUNA_APP_ID / ADZUNA_APP_KEY secrets'; return null; } return fromAdzuna(prefs); });
-  const remotiveDue = FORCE || !state.lastRemotiveAt || NOW - new Date(state.lastRemotiveAt) > 23 * H;
-  await run('remotive', n.feeds.remotive, async () => { if (!remotiveDue) { status.sources.remotive = 'ok (checked daily)'; return null; } const r = await fromRemotive(); state.lastRemotiveAt = NOW.toISOString(); return r; });
-  const gh = String(n.companies.greenhouse || '').split(/\s+/).filter(Boolean).slice(0, 15), lv = String(n.companies.lever || '').split(/\s+/).filter(Boolean).slice(0, 15);
-  await run('greenhouse', n.feeds.ats, async () => { if (!gh.length) { status.sources.greenhouse = 'no companies followed'; return null; } const all = []; const bad = []; for (const t of gh) { try { all.push(...await fromGreenhouse(t)); } catch (e) { bad.push(t); } await sleep(400); } if (bad.length) ctx.err('greenhouse boards not found: ' + bad.join(', ')); return all; }, `ok (${gh.length} board${gh.length > 1 ? 's' : ''})`);
-  await run('lever', n.feeds.ats, async () => { if (!lv.length) { status.sources.lever = 'no companies followed'; return null; } const all = []; const bad = []; for (const t of lv) { try { all.push(...await fromLever(t)); } catch (e) { bad.push(t); } await sleep(400); } if (bad.length) ctx.err('lever companies not found: ' + bad.join(', ')); return all; }, `ok (${lv.length} compan${lv.length > 1 ? 'ies' : 'y'})`);
-  status.lastDiscoveryAt = NOW.toISOString();
-  const match = titleMatcher(prefs); const fresh = []; const seen = new Set(Object.values(U.jobs).map(j => j.source + ':' + j.externalId));
-  for (const c of cands) {
-    if (!c.title || !c.url || seen.has(c.source + ':' + c.extId)) continue; seen.add(c.source + ':' + c.extId);
-    if (c.postedAt && NOW - new Date(c.postedAt) > 21 * DAY) continue;
-    if (!match(c.title) || !locationOK(c.location, prefs, c.remote || c.source === 'remotive')) continue;
-    const job = toJob(c, profile, prefs, weights);
-    globalThis.S = { jobs: U.jobs }; if (E.findDuplicate(job)) continue;
-    U.jobs[job.id] = job; fresh.push(job); disc[c.source] = (disc[c.source] || 0) + 1;
-    if (fresh.length >= 40) break;
+  if (!FORCE && last && NOW - last < 6 * H - 10 * 60e3) return NOTHING();
+  const extra = [];
+  if (!n.feeds.adzuna) status.sources.adzuna = 'off';
+  else if (!ADZ_ID || !ADZ_KEY) status.sources.adzuna = 'missing ADZUNA_APP_ID / ADZUNA_APP_KEY secrets';
+  else { try { extra.push(...await fromAdzuna(prefs)); status.sources.adzuna = 'ok'; } catch (e) { status.sources.adzuna = 'error: ' + e.message; ctx.err('adzuna: ' + e.message); } }
+  const boards = n.feeds.ats === false ? [] : E.boardsFor(n);
+  state.remoteAt = { ...(state.remoteAt || {}) };
+  const due = k => FORCE || !state.remoteAt[k] || NOW - new Date(state.remoteAt[k]) > 23 * H;
+  const remote = {}; for (const k of Object.keys(E.REMOTE_NAME)) remote[k] = n.feeds[k] === false ? false : due(k) ? true : null;
+  const res = await E.discoverJobs({ prefs, profile, weights, boards, remote, extra, existing: Object.values(U.jobs), maxNew: 40, now: NOW, by: 'server', cacheMs: 0 });
+  const st = res.stats;
+  for (const ats of Object.keys(E.ATS_NAME)) {
+    const mine = boards.filter(b => b.ats === ats), bad = st.failed.filter(f => f.ats === ats);
+    status.sources[ats] = n.feeds.ats === false ? 'off' : !mine.length ? 'no companies followed' : bad.length === mine.length ? 'error: no board could be read' : bad.length ? `ok (${bad.length} of ${mine.length} boards unreachable)` : 'ok';
   }
-  status.discovered = disc;
-  log(`discovery: ${cands.length} candidates, ${fresh.length} new`);
-  return fresh;
+  for (const k of Object.keys(E.REMOTE_NAME)) {
+    const v = st.remote[k] || 'off';
+    status.sources[k] = v === 'skipped' ? 'ok (checked daily)' : v;
+    if (v === 'ok') state.remoteAt[k] = NOW.toISOString();
+    if (/^error/.test(v)) ctx.err(`${k}: ${v}`);
+  }
+  if (st.failed.length) ctx.err(`boards unreachable: ${st.failed.slice(0, 6).map(f => f.ats + '/' + f.token).join(', ')}${st.failed.length > 6 ? '…' : ''}`);
+  status.lastDiscoveryAt = NOW.toISOString(); status.discovered = { ...st.perSource };
+  status.lastSearch = { boards: st.boards, boardsOk: st.boardsOk, listed: st.listed, added: st.added, closed: res.closed.length };
+  for (const j of res.fresh) U.jobs[j.id] = j;
+  log(`discovery: ${st.listed} open roles on ${st.boardsOk}/${st.boards} boards, ${res.fresh.length} new, ${res.closed.length} closed`);
+  return res;
 }
 
 /* ---------------- What needs attention ---------------- */
 const OPEN = ['Discovered', 'Analyzed', 'Shortlisted', 'ResumeGenerated', 'AwaitingApproval', 'Approved'];
 const lastEntry = (j, st) => [...(j.history || [])].reverse().find(h => h.to === st);
-function buildAlerts(U, ctx, fresh) {
+function buildAlerts(U, ctx, fresh, closedJobs = []) {
   const { n, state, tz } = ctx; const A = []; const sent = state.sent;
   const add = a => { if (sent[a.key]) return; A.push(a); };
   if (n.events.newJobs) {
@@ -228,6 +172,8 @@ function buildAlerts(U, ctx, fresh) {
     good.slice(0, 5).forEach(j => add({ key: 'new:' + j.id, type: 'new_match', via: ['telegram', 'push'], jobId: j.id, url: jobUrl(j.id), title: `New ${j.match.score}% match: ${j.title}`, body: `${j.company} · ${j.workMode === 'remote' ? 'Remote' : (j.location || 'Location n/a')} · ${E.salaryRange(j.salaryMin, j.salaryMax)} · via ${E.SOURCE_NAME[j.source]}` }));
     if (good.length > 5) add({ key: 'newmore:' + NOW.toISOString().slice(0, 13), type: 'new_match', via: ['telegram'], url: pageUrl('jobs'), title: `${good.length - 5} more new matches`, body: 'Open Recommended Jobs to see them all.' });
   }
+  // a role you were preparing has been taken down by the employer
+  if (n.events.deadlines) closedJobs.filter(j => ['Shortlisted', 'ResumeGenerated', 'AwaitingApproval', 'Approved'].includes(j.stage)).forEach(j => add({ key: 'closed:' + j.id, type: 'closed', via: ['telegram', 'push'], jobId: j.id, url: jobUrl(j.id), title: `Role closed: ${j.title}`, body: `${j.company} no longer lists this role, so it can’t be applied to.` }));
   for (const j of Object.values(U.jobs)) {
     if (n.events.interviews && j.app) for (const iv of (j.app.interviews || [])) {
       const hrs = (new Date(iv.at) - NOW) / H; if (!(hrs > 0)) continue;
@@ -235,11 +181,11 @@ function buildAlerts(U, ctx, fresh) {
       else if (hrs <= 26) add({ key: 'iv24:' + iv.id, type: 'interview', via: ['telegram', 'push', 'email'], jobId: j.id, url: pageUrl('interviews'), title: `Interview tomorrow: ${j.company}`, body: `${iv.type || 'Interview'} for ${j.title} at ${fmtWhen(iv.at, tz)}. Your prep plan is on the Interview Prep page.` });
     }
     if (n.events.deadlines) {
-      if (j.deadline && OPEN.includes(j.stage)) { const d = (new Date(j.deadline + 'T23:59:00') - NOW) / DAY; if (d >= 0 && d <= 2) add({ key: `dl:${j.id}:${j.deadline}`, type: 'deadline', via: ['telegram', 'push', 'email'], jobId: j.id, url: jobUrl(j.id), title: `Apply by ${E.fmtDate(j.deadline)}: ${j.title}`, body: `${j.company} · ${STAGE_LABEL(j.stage)}` }); }
+      if (j.deadline && OPEN.includes(j.stage) && !j.closed) { const d = (new Date(j.deadline + 'T23:59:00') - NOW) / DAY; if (d >= 0 && d <= 2) add({ key: `dl:${j.id}:${j.deadline}`, type: 'deadline', via: ['telegram', 'push', 'email'], jobId: j.id, url: jobUrl(j.id), title: `Apply by ${E.fmtDate(j.deadline)}: ${j.title}`, body: `${j.company} · ${STAGE_LABEL(j.stage)}` }); }
       const o = j.app && j.app.offer; if (o && o.deadline && j.stage === 'OfferReceived') { const d = (new Date(o.deadline + 'T23:59:00') - NOW) / DAY; if (d >= 0 && d <= 2) add({ key: `od:${j.id}:${o.deadline}`, type: 'deadline', via: ['telegram', 'push', 'email'], jobId: j.id, url: pageUrl('offers'), title: `Offer response due ${E.fmtDate(o.deadline)}: ${j.company}`, body: 'Compare your offers before you reply.' }); }
     }
     if (n.events.approvals) {
-      if (j.stage === 'AwaitingApproval') { const h = lastEntry(j, 'AwaitingApproval'); if (h && NOW - new Date(h.t) > DAY) add({ key: `ap:${j.id}:${h.t}`, type: 'approval', via: ['telegram', 'push'], jobId: j.id, url: pageUrl('approvals'), title: `Waiting for your approval: ${j.title}`, body: `${j.company} · prepared ${E.fmtDate(h.t)}. Nothing is sent until you approve.` }); }
+      if (j.stage === 'AwaitingApproval' && !j.closed) { const h = lastEntry(j, 'AwaitingApproval'); if (h && NOW - new Date(h.t) > DAY) add({ key: `ap:${j.id}:${h.t}`, type: 'approval', via: ['telegram', 'push'], jobId: j.id, url: pageUrl('approvals'), title: `Waiting for your approval: ${j.title}`, body: `${j.company} · prepared ${E.fmtDate(h.t)}. Nothing is sent until you approve.` }); }
       const ap = j.app && j.app.approval; if (j.stage === 'Approved' && ap && ap.expiresAt) { const h = (new Date(ap.expiresAt) - NOW) / H; if (h > 0 && h <= 24) add({ key: `ax:${j.id}:${ap.expiresAt}`, type: 'approval', via: ['telegram', 'push'], jobId: j.id, url: pageUrl('approvals'), title: `Approval expires soon: ${j.company}`, body: `Submit ${j.title} before ${fmtWhen(ap.expiresAt, tz)} or approve it again later.` }); }
     }
     if (n.events.followups && ['Applied', 'UnderReview'].includes(j.stage)) { const h = (j.history || [])[j.history.length - 1]; if (h && NOW - new Date(h.t) > 10 * DAY) add({ key: `fu:${j.id}:${h.t}`, type: 'followup', via: ['telegram'], jobId: j.id, url: jobUrl(j.id), title: `No update for ${Math.floor((NOW - new Date(h.t)) / DAY)} days: ${j.company}`, body: `Consider a polite follow-up about ${j.title}${j.app && j.app.recruiter && j.app.recruiter.email ? ' to ' + j.app.recruiter.email : ''}.` }); }
@@ -302,9 +248,12 @@ async function processUser(U) {
   const status = { ...prevStatus, lastRunAt: NOW.toISOString(), version: VERSION, errors: (prevStatus.errors || []).filter(e => NOW - new Date(e.t) < 2 * DAY).slice(0, 5),
     channels: { email: !RESEND_KEY ? 'missing RESEND_API_KEY secret' : n.emailOn ? (n.email ? 'configured' : 'missing address') : 'off', telegram: !TG_TOKEN ? 'missing TELEGRAM_BOT_TOKEN secret' : n.telegramOn ? ((n.telegramChatId || (U.linksOut || U.server.links || {}).telegramChatId) ? 'configured' : 'not linked yet') : 'off', push: !PUSH_OK ? 'missing VAPID secrets' : n.pushOn ? ((n.pushSubs || []).length ? `configured (${n.pushSubs.length} device${n.pushSubs.length > 1 ? 's' : ''})` : 'no devices yet') : 'off' } };
   const ctx = { n, prefs, profile, weights, state, status, tz: n.tz || 'Asia/Kolkata', err };
-  let fresh = [];
-  try { fresh = await discover(U, ctx); } catch (e) { err('discovery: ' + e.message); }
-  const alerts = buildAlerts(U, ctx, fresh);
+  let found = NOTHING();
+  try { found = await discover(U, ctx); } catch (e) { err('discovery: ' + e.message); }
+  const fresh = found.fresh; const touched = [];
+  for (const id of found.closed) { const j = U.jobs[id]; if (!j) continue; j.closed = true; j.closedAt = NOW.toISOString(); j.updatedAt = NOW.toISOString(); touched.push(j); }
+  for (const id of found.reopened) { const j = U.jobs[id]; if (!j) continue; j.closed = false; delete j.closedAt; j.verifiedOpenAt = NOW.toISOString(); j.updatedAt = NOW.toISOString(); touched.push(j); }
+  const alerts = buildAlerts(U, ctx, fresh, touched.filter(j => j.closed));
   const links = U.linksOut || U.server.links || {};
   const chat = n.telegramChatId || links.telegramChatId;
   const dead = new Set(links.deadPush || []);
@@ -327,7 +276,7 @@ async function processUser(U) {
   status.sent = sentCount;
   const linksOut = { ...links, deadPush: [...dead].slice(-20) };
   const docs = [
-    ...fresh.map(j => ({ kind: 'jobs', id: j.id, data: j })),
+    ...[...fresh, ...touched].map(j => ({ kind: 'jobs', id: j.id, data: j })),
     ...alertDocs,
     { kind: 'server', id: 'state', data: state },
     { kind: 'server', id: 'status', data: status },
@@ -335,8 +284,8 @@ async function processUser(U) {
   if (JSON.stringify(linksOut) !== JSON.stringify(U.server.links || {})) docs.push({ kind: 'server', id: 'links', data: linksOut });
   await upsert(U.uid, docs);
   await pruneAlerts(U.uid).catch(e => log('prune failed', e.message));
-  log(`user done: ${fresh.length} new jobs, ${alerts.length} alerts (telegram ${sentCount.telegram}, email ${sentCount.email}, push ${sentCount.push})${DRY ? ' [dry run]' : ''}`);
-  return { fresh: fresh.length, alerts: alerts.length, sent: sentCount, errors: errors.length };
+  log(`user done: ${fresh.length} new jobs, ${touched.filter(j => j.closed).length} closed, ${alerts.length} alerts (telegram ${sentCount.telegram}, email ${sentCount.email}, push ${sentCount.push})${DRY ? ' [dry run]' : ''}`);
+  return { fresh: fresh.length, closed: touched.filter(j => j.closed).length, alerts: alerts.length, sent: sentCount, errors: errors.length };
 }
 
 async function main() {

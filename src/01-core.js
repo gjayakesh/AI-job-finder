@@ -22,7 +22,7 @@ const CLOUD = !!(CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY && !/YOUR[-_]/i
 const SITE_URL = location.origin + location.pathname;
 
 /* ============ Capabilities ============ */
-const CAP = { sb: null, sample: null, toolsOK: false, sampleOK: true };
+const CAP = { sb: null, toolsOK: false, sampleOK: true };
 
 /* ============ App state ============ */
 const DEFAULT_SETTINGS = {
@@ -33,15 +33,15 @@ const DEFAULT_NOTIFY = () => ({
   email: '', emailOn: false, telegramOn: false, telegramChatId: '', telegramCode: '', pushOn: true, pushSubs: [],
   events: { newJobs: true, interviews: true, deadlines: true, approvals: true, followups: true, digest: true, weekly: true },
   minScore: 70, digestHour: 9, tz: (Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Kolkata'),
-  feeds: { adzuna: true, remotive: true, ats: true }, companies: { greenhouse: '', lever: '' }, testAt: null,
+  feeds: { adzuna: true, remotive: true, remoteok: true, ats: true }, companies: { greenhouse: '', lever: '', ashby: '', smartrecruiters: '' }, boardsOff: [], useDirectory: true, testAt: null,
 });
 const S = {
-  mode: 'loading', // cloud | local | memory | demo | auth
+  mode: 'loading', // cloud | local | memory | auth
   realMode: null, uid: null, session: null, loadNote: '',
   profile: null, prefs: null, settings: clone(DEFAULT_SETTINGS), meta: {}, notify: null,
   jobs: {}, versions: {}, resumes: {}, alerts: {}, server: {},
   logs: [], notifs: [], chat: [], reports: [],
-  ui: { tab: {}, filter: { minScore: 0, status: 'all', q: '', sort: 'score' }, notifOpen: false, draft: null, prefDraft: null, auth: { mode: 'signin', msg: '', err: '' } },
+  ui: { tab: {}, filter: { minScore: 0, status: 'open', q: '', sort: 'score' }, notifOpen: false, draft: null, prefDraft: null, auth: { mode: 'signin', msg: '', err: '' } },
 };
 const SINGLES = ['profile', 'prefs', 'settings', 'meta', 'logs', 'notifs', 'chat', 'reports', 'notify'];
 const COLLS = ['jobs', 'versions', 'resumes', 'alerts'];
@@ -320,10 +320,10 @@ const Busy = {
 function openModal(html, { wide = false, onClose } = {}) {
   const root = $('#modal-root');
   root.innerHTML = `<div class="modal-bg" data-act="modal-bg"><div class="modal ${wide ? 'wide' : ''}" role="dialog" aria-modal="true">${html}</div></div>`;
-  root._onClose = onClose;
+  root._onClose = onClose; root._back = root._back || window._trigger || document.activeElement;
   const f = root.querySelector('input,textarea,select,button.primary'); if (f) setTimeout(() => f.focus(), 20);
 }
-function closeModal(val) { const root = $('#modal-root'); const cb = root._onClose; root._onClose = null; root.innerHTML = ''; if (cb) cb(val); }
+function closeModal(val) { const root = $('#modal-root'); const cb = root._onClose, back = root._back; root._onClose = null; root._back = null; root.innerHTML = ''; if (cb) cb(val); setTimeout(() => { if (back && back.isConnected && !back.disabled && !$('#modal-root').innerHTML) back.focus(); }, 40); }
 function confirmDialog({ title, body = '', ok = 'Confirm', cancel = 'Cancel', danger = false, input = null }) {
   return new Promise(res => {
     openModal(`<h2>${esc(title)}</h2><div class="stack">${body}</div>${input ? `<label class="f"><span>${esc(input.label)}</span><input type="text" id="dlg-input" placeholder="${esc(input.placeholder || '')}"></label>` : ''}
