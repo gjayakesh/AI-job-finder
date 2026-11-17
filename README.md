@@ -17,6 +17,21 @@ There is no sample data: the site starts empty and fills with real openings as s
 
 **Live site: https://gjayakesh.github.io/AI-job-finder/** (code: https://github.com/gjayakesh/AI-job-finder)
 
+## How the site is organised
+
+Six sections in the left menu; related pages are tabs inside each one.
+
+| Section | What's in it |
+|---|---|
+| **Home** | The 4-step checklist for new users, then your search button and best matches. |
+| **Find jobs** | **Matches** (search, filter, every job with its score) and **Companies & import** (the career pages searched, remote feeds, import a posting from another site). |
+| **Applications** | **Tracker**, **To approve**, **Interviews**, **Offers**. |
+| **My profile** | **Resume** (upload), **Details** (your profile), **Job preferences**. |
+| **Insights** | **Overview** numbers and charts, plus what shortlists and rejections teach you. |
+| **Settings** | **Account & AI** (password, optional Gemini key, export or delete data), **Notifications**, **Activity log**. |
+
+**Ask AI** (chat bubble in the top bar) takes plain-language commands such as "search now". Older page addresses such as `#approvals` or `#config` still open the right tab.
+
 Setup takes about 30–40 minutes. Do the steps in order.
 
 ---
@@ -54,7 +69,7 @@ If you ever create a new project, paste `supabase/schema.sql` into **SQL Editor 
 
 1. Open your site → **Create an account** with your email and a password.
 2. Open the confirmation email from Supabase and click the link, then sign in.
-3. Follow the **Get set up** checklist on the Dashboard: add your resume (PDF/DOCX), say what job you want, then press **Search now**.
+3. Follow the **Get started in 4 steps** checklist on **Home**: add your resume (PDF/DOCX), say what job you want, then press **Search now**.
 4. Recommended for a personal site: Supabase → **Authentication → Sign In / Providers** → turn off **Allow new users to sign up**, so nobody else can create an account on your site.
 
 > Supabase's built-in email sender is rate-limited (a few emails per hour). That's fine for one person.
@@ -104,18 +119,18 @@ Then: repo → **Actions** → enable workflows if asked → **Career agent** �
 
 ## Step 8 — Switch alerts on in the website
 
-1. Open your site → **Notifications** (left menu).
+1. Open your site → **Settings → Notifications**.
 2. The **Alert server** card should say **Running** with the time of the last run.
 3. Tick **Email** and check the address. Tick **Telegram** → **Connect Telegram** → tap **Start** in the bot. The next run links your chat and the bot replies "Connected". Click **Enable on this device** for push.
 4. Choose what to be alerted about, your minimum match score for new jobs, and your daily digest time.
-5. Under **Scheduled job search**, choose which sources the server repeats every 6 hours. The companies it searches are the ones on your **Job Discovery** page.
+5. Under **Scheduled job search**, choose which sources the server repeats every 6 hours. The companies it searches are the ones on **Find jobs → Companies & import**.
 6. Click **Save notification settings**, then **Send a test alert**. It arrives on the next run, or immediately if you click **Run workflow** again.
 
-Also fill in **Job Preferences** (titles, cities, salary). Every search uses those.
+Also fill in **My profile → Job preferences** (titles, cities, salary). Every search uses those.
 
 ## Finding jobs that are open to apply
 
-**Job Discovery → Search open roles** reads the live listings of the company career boards on your list (62 suggested companies with open roles in India, checked on 10 Nov 2026) plus the Remotive and Remote OK feeds, straight from your browser. It needs no keys and no server setup.
+**Find jobs → Search open roles** reads the live listings of the company career boards on your list (62 suggested companies with open roles in India, checked on 10 Nov 2026) plus the Remotive and Remote OK feeds, straight from your browser. It needs no keys and no server setup.
 
 - **Only open roles.** These boards list a job only while the employer accepts applications. Each job keeps the employer's own application link.
 - **Closed roles are flagged.** Every search re-checks the jobs you saved. If the employer has taken one down it is marked **Closed**, hidden from the default list and can't be prepared or submitted. On a job page, **Check now** re-checks that one posting.
@@ -124,7 +139,7 @@ Also fill in **Job Preferences** (titles, cities, salary). Every search uses tho
 - **Other sites.** LinkedIn, Naukri, Indeed and similar sites don't allow automated access. Use the ready-made search links, then **Import a job** by pasting the posting.
 - **More coverage.** Adzuna's India-wide search runs only in the scheduled server job (step 7), because it needs a private key.
 
-Applying is always yours to approve: **Prepare application** builds the tailored resume and the answers, the Approval Center locks the exact version you approve, and **Submit** opens the employer's application page with your answers ready to paste. The site never submits anything by itself.
+Applying is always yours to approve: **Prepare application** builds the tailored resume and the answers, the **To approve** tab (under Applications) locks the exact version you approve, and **Submit** opens the employer's application page with your answers ready to paste. The site never submits anything by itself.
 
 ## What you get alerted about
 
@@ -144,13 +159,13 @@ Every alert also appears in the bell icon inside the site. Each alert is sent on
 
 ## Optional — AI with a free Gemini key
 
-Configuration → **AI provider** → paste a key from aistudio.google.com/apikey → tick **Use Gemini**. The site asks before sending your resume or profile. On Google's free tier, prompts may be used to improve Google's products. If you'd rather keep everything private, leave it off: the local engine handles every feature.
+**Settings → Account & AI** → **AI assistant** → paste a key from aistudio.google.com/apikey → tick **Use Gemini**. The site asks before sending your resume or profile. On Google's free tier, prompts may be used to improve Google's products. If you'd rather keep everything private, leave it off: the local engine handles every feature.
 
 ## Staying signed in
 
 Once you sign in on a device, you stay signed in there: reloading, closing the tab or browser, and restarting the phone or computer don't sign you out. A sign-in ends only when:
 
-- you click **Sign out** (left menu or Configuration → Account), or
+- you click **Sign out** (left menu or Settings → Account & AI), or
 - that device goes **30 days without activity**. Opening the site, clicking, typing and scrolling all count as activity, so using it at least once a month keeps you signed in. The next time you open it after 30 idle days, it asks you to sign in again and says why.
 
 Each device keeps its own timer, and signing out for inactivity on one device doesn't affect your other devices. If the server can't be reached (no internet, or the Supabase project is paused), you are not signed out: the sign-in screen says the server is unreachable, and reloading once you're back online returns you to your data.
@@ -176,13 +191,13 @@ Each device keeps its own timer, and signing out for inactivity on one device do
 | Site shows "data is saved in this browser only" | `SUPABASE_ANON_KEY` in `config.js` is still the placeholder. |
 | "Can't reach the server" on sign-in | The Supabase project is paused. Restore it in the dashboard. |
 | Confirmation link says expired | Sign in with your password anyway (the email is confirmed), or request a new link. |
-| Notifications page: "Waiting for first run" | Add the secrets (step 7) and click Run workflow. |
+| Settings → Notifications: "Waiting for first run" | Add the secrets (step 7) and click Run workflow. |
 | Channel shows "missing … secret" | Add that secret in GitHub and run the workflow again. |
 | Telegram "not linked yet" | Tap Connect Telegram, press Start in the bot, then wait for the next run (or run the workflow). |
 | No email arrives | On Resend's free plan the address must be your Resend sign-up email. |
 | Adzuna shows an error | Check `ADZUNA_APP_ID` / `ADZUNA_APP_KEY`. Free keys have daily limits. |
-| Search finds nothing new | Use broader job titles or more cities in Job Preferences, add companies on Job Discovery, or import a posting you found elsewhere. |
-| A board "could not be read" | The company moved its careers site. Remove it on Job Discovery, or add its new careers link. |
+| Search finds nothing new | Use broader job titles or more cities in My profile → Job preferences, add companies under Companies & import, or import a posting you found elsewhere. |
+| A board "could not be read" | The company moved its careers site. Remove it under Find jobs → Companies & import, or add its new careers link. |
 
 ## For developers
 

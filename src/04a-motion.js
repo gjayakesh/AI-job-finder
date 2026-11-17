@@ -47,6 +47,9 @@ const Motion = {
       const bar = $('#scroll-prog'); if (bar) bar.style.transform = `scaleX(${max > 80 ? Math.min(1, y / max) : 0})`;
       const top = $('#top'); if (top) top.classList.toggle('scrolled', y > 6);
       const up = $('#to-top'); if (up) up.hidden = y < 700;
+      // A jump (End key, dragging the scrollbar) can skip past blocks without the observer ever seeing them: reveal everything at or above the fold.
+      const edge = m.getBoundingClientRect().top + m.clientHeight * 0.94;
+      $$('.rv:not(.rv-in)').forEach(el => { if (el.getBoundingClientRect().top < edge) { el.classList.add('rv-in'); if (this.io) this.io.unobserve(el); } });
     }
     const pipe = $('#pipe'); if (!pipe) return;
     const doc = document.documentElement; const atEnd = scrollY + innerHeight >= doc.scrollHeight - 4;

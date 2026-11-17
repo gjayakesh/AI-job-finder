@@ -1,7 +1,5 @@
 /* ============ Self-hosted site: auth, notifications, push, sync ============ */
 Object.assign(SOURCE_NAME, { adzuna: 'Adzuna', remotive: 'Remotive', greenhouse: 'Greenhouse', lever: 'Lever' });
-NAV.forEach(g => g[1].forEach(([k, t]) => { TITLES[k] = t; }));
-TITLES.alerts = 'Notifications';
 // Tests and local development point the job feeds at a mock; the live site uses the public APIs.
 Object.assign(FEED_API, CONFIG.FEED_API || {});
 if (Array.isArray(CONFIG.BOARDS)) BOARD_DIRECTORY.splice(0, BOARD_DIRECTORY.length, ...CONFIG.BOARDS);
@@ -12,17 +10,15 @@ V.auth = () => {
   const a = S.ui.auth; const m = a.mode;
   const field = (n, l, t, ac) => `<label class="f"><span>${l}</span><input type="${t}" name="${n}" id="auth-${n}" autocomplete="${ac}" ${n === 'email' ? `value="${esc(a.email || '')}"` : ''}></label>`;
   const story = [
-    ['Read your resume', 'Upload a PDF or DOCX. The original is kept unchanged, and the profile it builds is yours to edit.'],
-    ['Search open roles', `Live listings from ${BOARD_DIRECTORY.length} company career boards and remote job feeds. A role that closes is flagged, so you only spend time on jobs you can still apply to.`],
-    ['Score every match', 'Skills, experience, education, projects, location and pay, each one explained. You can change the weights.'],
-    ['Tailor the resume', 'A separate version for each job, built only from facts in your profile. Nothing is invented.'],
-    ['Approve, then apply', 'Nothing is sent without your approval. The employer’s own application page opens with your answers ready to paste.'],
-    ['Track every outcome', 'Interviews, offers and rejections in one place, with confirmed reasons kept apart from guesses.'],
+    ['Add your resume', 'Upload a PDF or DOCX. We build your profile from it, and the original file is never changed.'],
+    ['Find open jobs', `We check ${BOARD_DIRECTORY.length} company career pages and remote job feeds, and keep only roles that are open right now.`],
+    ['See why each one fits', 'Every job gets a 0–100 match score with the reasons: skills, experience, location and pay.'],
+    ['Apply when you approve', 'We tailor your resume for each job. Nothing is sent until you approve it.'],
   ];
   return `<div class="landing"><header class="landing-top"><div class="brand" style="padding:0"><div class="brand-mark">AC</div><div><b>${esc(CONFIG.APP_NAME)}</b><small>Job search, under your control</small></div></div>${themeSeg()}</header>
   <div class="landing-grid">
-  <section class="landing-story"><h1>Find open roles, tailor your resume, and apply with your approval.</h1>
-  <p class="lede">A personal job-search workspace. It reads live openings from company career boards, scores each one against your resume, and prepares the application for you to approve.</p>
+  <section class="landing-story"><h1>Find jobs that fit your resume. Apply only when you approve.</h1>
+  <p class="lede">Free and private. It finds open roles, shows how well each one matches you, and prepares the application. Nothing is sent without you.</p>
   <ol class="pipe" id="pipe">${story.map(([t, d], i) => `<li class="pipe-step"><span class="pipe-n" aria-hidden="true">${i + 1}</span><div><h2>${t}</h2><p>${d}</p></div></li>`).join('')}</ol></section>
   <aside class="auth-card" aria-label="Your account"><h2 class="auth-title">${AUTH_TITLES[m]}</h2>
   ${a.err ? `<div class="banner bad" role="alert"><span>${esc(a.err)}</span></div>` : ''}${a.msg ? `<div class="banner info" role="status"><span>${esc(a.msg)}</span></div>` : ''}
@@ -32,7 +28,7 @@ V.auth = () => {
     <button class="btn primary" type="submit" style="justify-content:center">${{ signin: 'Sign in', signup: 'Create account', magic: 'Send link', reset: 'Send reset link', newpass: 'Save password' }[m]}</button>
   </form>
   <div class="stack small">${m === 'signin' ? `<a href="#" data-act="auth-mode" data-mode="signup">New here? Create an account</a><a href="#" data-act="auth-mode" data-mode="magic">Sign in with an email link instead</a><a href="#" data-act="auth-mode" data-mode="reset">Forgot password?</a>` : `<a href="#" data-act="auth-mode" data-mode="signin">Back to sign in</a>`}</div>
-  <p class="tiny muted">You stay signed in on this device until you sign out, or until it goes ${IDLE_DAYS} days without being used. Your data is stored in your own Supabase project and protected by row-level security: only your account can read it.</p></aside>
+  <p class="tiny muted">You stay signed in on this device until you sign out, or until it goes ${IDLE_DAYS} days without being used. Your data is private: only your account can read it.</p></aside>
   </div></div>`;
 };
 function authErr(e) {
@@ -178,8 +174,8 @@ V.alerts = () => {
   const alerts = Object.values(S.alerts || {}).sort((a, b) => b.t.localeCompare(a.t)).slice(0, 15);
   const ev = [['newJobs', 'New jobs that match your profile', 'From the job feeds, at or above your minimum score'], ['interviews', 'Interview reminders', '24 hours and 2 hours before'], ['deadlines', 'Deadlines', 'Application deadlines and offer response dates within 2 days'], ['approvals', 'Applications waiting for approval', 'After 24 hours, and before an approval expires'], ['followups', 'Follow-up nudges', 'When an application has had no update for 10 days'], ['digest', 'Daily digest', 'One summary a day at the hour below'], ['weekly', 'Weekly report', 'Mondays, with conversion rates and skill gaps']];
   return `<div class="card"><div class="card-h"><h2>Alert server</h2>${st ? (stale ? '<span class="pill bad">Not running</span>' : '<span class="pill good">Running</span>') : '<span class="pill warn">Waiting for first run</span>'}<span class="sp"></span><span class="small muted">Last run: <b>${esc(st ? relTime(st.lastRunAt) : 'never')}</b>${st && st.lastDiscoveryAt ? ` · last job search ${esc(relTime(st.lastDiscoveryAt))}` : ''}</span></div>
-  ${st ? `<div class="grid g2"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Channel</th><th>Server</th></tr></thead><tbody>${['email', 'telegram', 'push'].map(c => `<tr><td>${{ email: 'Email (Resend)', telegram: 'Telegram bot', push: 'Browser push' }[c]}</td><td>${statusPill((st.channels || {})[c])}</td></tr>`).join('')}</tbody></table></div>
-  <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Job feed</th><th>Status</th><th class="r">New last run</th></tr></thead><tbody>${['greenhouse', 'lever', 'ashby', 'smartrecruiters', 'remotive', 'remoteok', 'adzuna'].map(c => `<tr><td>${SOURCE_NAME[c]}</td><td>${statusPill((st.sources || {})[c])}</td><td class="r num">${((st.discovered || {})[c]) ?? '—'}</td></tr>`).join('')}</tbody></table></div></div>
+  ${st ? `<details class="more"><summary class="small">Technical details</summary><div class="grid g2" style="margin-top:10px"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Channel</th><th>Server</th></tr></thead><tbody>${['email', 'telegram', 'push'].map(c => `<tr><td>${{ email: 'Email (Resend)', telegram: 'Telegram bot', push: 'Browser push' }[c]}</td><td>${statusPill((st.channels || {})[c])}</td></tr>`).join('')}</tbody></table></div>
+  <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Job feed</th><th>Status</th><th class="r">New last run</th></tr></thead><tbody>${['greenhouse', 'lever', 'ashby', 'smartrecruiters', 'remotive', 'remoteok', 'adzuna'].map(c => `<tr><td>${SOURCE_NAME[c]}</td><td>${statusPill((st.sources || {})[c])}</td><td class="r num">${((st.discovered || {})[c]) ?? '—'}</td></tr>`).join('')}</tbody></table></div></div></details>
   ${(st.errors || []).length ? `<div class="stripe bad small"><b>Recent server errors</b>${st.errors.slice(0, 3).map(e => `<div>${esc(fmtDT(e.t))}: ${esc(e.msg)}</div>`).join('')}</div>` : ''}` : `<p class="small">No run recorded yet. Finish the GitHub Actions step in the README, then open your repository → Actions → “Career agent” → Run workflow. Results appear here within a minute.</p>`}
   ${stale ? '<p class="small" style="color:var(--bad)">GitHub turns off scheduled jobs after 60 days without repository activity, and can delay runs when busy. Open Actions and click “Enable workflow” if you see a warning there.</p>' : ''}</div>
   <form novalidate class="stack" style="gap:16px" data-form="notify" id="notify-form">
@@ -195,8 +191,8 @@ V.alerts = () => {
   <p class="tiny muted">On iPhone, first add this site to your Home Screen and open it from there.</p></div></div>
   <div class="card"><h2>What to alert me about</h2><div class="stack">${ev.map(([k, l, d]) => `<label class="check" style="align-items:flex-start"><input type="checkbox" name="ev_${k}" ${n.events[k] ? 'checked' : ''}><span><b>${l}</b><br><span class="tiny muted">${d}</span></span></label>`).join('')}</div>
   <div class="fgrid"><label class="f"><span>Minimum match score for new-job alerts</span><input type="number" min="0" max="100" name="minScore" id="nt-min" value="${n.minScore}"></label><label class="f"><span>Daily digest time</span><select name="digestHour" id="nt-hour">${Array.from({ length: 24 }, (_, h) => `<option value="${h}" ${n.digestHour === h ? 'selected' : ''}>${String(h).padStart(2, '0')}:00</option>`).join('')}</select></label><label class="f"><span>Time zone</span><input type="text" name="tz" id="nt-tz" value="${esc(n.tz)}"></label></div></div>
-  <div class="card"><div class="card-h"><h2>Scheduled job search</h2><p>The server repeats the search every 6 hours with your <a href="#preferences">job preferences</a>, adds new matches to Recommended Jobs and flags roles that have closed.</p></div>
-  <div class="stack"><label class="check"><input type="checkbox" name="feed_ats" ${n.feeds.ats ? 'checked' : ''}><span><b>Company career boards</b> <span class="small muted">the ${boardsFor(n).length} companies on your <a href="#discover">Job Discovery</a> list</span></span></label>
+  <div class="card"><div class="card-h"><h2>Scheduled job search</h2><p>The server repeats the search every 6 hours with your <a href="#preferences">job preferences</a>, adds new matches to your jobs list and flags roles that have closed.</p></div>
+  <div class="stack"><label class="check"><input type="checkbox" name="feed_ats" ${n.feeds.ats ? 'checked' : ''}><span><b>Company career boards</b> <span class="small muted">the ${boardsFor(n).length} companies on your <a href="#discover">Companies &amp; import</a> list</span></span></label>
   <label class="check"><input type="checkbox" name="feed_remotive" ${n.feeds.remotive ? 'checked' : ''}><span><b>Remotive</b> <span class="small muted">remote roles open to India, checked daily</span></span></label>
   <label class="check"><input type="checkbox" name="feed_remoteok" ${n.feeds.remoteok ? 'checked' : ''}><span><b>Remote OK</b> <span class="small muted">remote roles open to India or worldwide, checked daily</span></span></label>
   <label class="check"><input type="checkbox" name="feed_adzuna" ${n.feeds.adzuna ? 'checked' : ''}><span><b>Adzuna</b> <span class="small muted">India-wide search (needs a free Adzuna key in GitHub secrets)</span></span></label></div>
