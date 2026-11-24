@@ -28,6 +28,7 @@ const IC = {
   x: '<path d="M18 6L6 18M6 6l12 12"/>',
   refresh: '<path d="M21 12a9 9 0 1 1-2.6-6.4M21 4v5h-5"/>',
   upload: '<path d="M12 16V4M6 9l6-6 6 6M4 20h16"/>',
+  help: '<circle cx="12" cy="12" r="9"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 2.5-3 4.5M12 17.5h.01"/>',
 };
 const icon = (n, extra = '') => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ${extra}>${IC[n] || ''}</svg>`;
 
@@ -35,13 +36,27 @@ const icon = (n, extra = '') => `<svg viewBox="0 0 24 24" fill="none" stroke="cu
 // Six sections. Related pages are tabs inside a section; every page keeps its own address (#resumes, #tracker, ...), so older links still work.
 const SECTIONS = [
   ['dashboard', 'Home', 'dash', [['dashboard', 'Home']]],
-  ['jobs', 'Find jobs', 'search', [['jobs', 'Matches'], ['discover', 'Companies & import']]],
-  ['tracker', 'Applications', 'board', [['tracker', 'Tracker'], ['approvals', 'To approve'], ['interviews', 'Interviews'], ['offers', 'Offers']]],
-  ['resumes', 'My profile', 'user', [['resumes', 'Resume'], ['profile', 'Details'], ['preferences', 'Job preferences']]],
-  ['analytics', 'Insights', 'chart', [['analytics', 'Overview'], ['shortlisting', 'Shortlisted'], ['rejections', 'Rejected']]],
+  ['jobs', 'Find jobs', 'search', [['jobs', 'Jobs for you'], ['discover', 'Add more jobs']]],
+  ['tracker', 'Applications', 'board', [['tracker', 'My applications'], ['approvals', 'Waiting for my OK'], ['interviews', 'Interviews'], ['offers', 'Offers']]],
+  ['resumes', 'My profile', 'user', [['resumes', 'Resume'], ['resumecheck', 'Resume check'], ['profile', 'My details'], ['preferences', 'What job I want']]],
+  ['analytics', 'Progress', 'chart', [['analytics', 'Overview'], ['shortlisting', 'Shortlisted'], ['rejections', 'Rejected']]],
   ['config', 'Settings', 'gear', [['config', 'Account & AI'], ['alerts', 'Notifications'], ['activity', 'Activity log']]],
 ];
-const TITLES = { chat: 'Ask AI' };
+const TITLES = { chat: 'Ask AI', help: 'Help' };
+// One plain sentence under each page, so a first-time visitor knows what the page is for.
+const PAGE_HELP = {
+  jobs: 'Real jobs that are open right now. The number is how well each one fits your resume, out of 100. Click a job to see why.',
+  tracker: 'Every job you decide to apply for, and where it stands.',
+  approvals: 'Nothing is sent to an employer until you approve it here.',
+  interviews: 'Your upcoming interviews.',
+  offers: 'Job offers you have received, side by side.',
+  analytics: 'A summary of your job search so far.',
+  shortlisting: 'What the jobs you shortlisted have in common.',
+  rejections: 'What rejected applications have in common, and what to change.',
+  config: 'Your account and password, plus an optional free AI key.',
+  alerts: 'Get a message on your phone or email when new matching jobs appear.',
+  activity: 'A record of everything this site has done for you.',
+};
 SECTIONS.forEach(s => s[3].forEach(t => { TITLES[t[0]] = s[1]; }));
 const sectionOf = view => view === 'job' ? 'jobs' : (SECTIONS.find(s => s[3].some(t => t[0] === view)) || [])[0];
 function route() { const h = (location.hash || '').replace(/^#/, ''); const m = h.match(/^(job)-([a-z0-9]+)$/i); if (m) return { view: 'job', id: m[2] }; return { view: TITLES[h] ? h : 'dashboard', id: null }; }
@@ -64,8 +79,8 @@ function layout(view, title, body) {
   <div class="rail-foot">${foot}</div></aside>
   <div class="rail-shade" data-act="menu" aria-hidden="true"></div>
   <main class="main" id="main"><header class="top" id="top"><button class="icon-btn menu-btn" type="button" data-act="menu" aria-label="Open menu">${icon('menu')}</button><h1>${esc(title)}</h1><span class="sp"></span>
-  <a class="icon-btn" href="#chat" aria-label="Ask AI" title="Ask AI">${icon('chat')}</a>${themeSeg()}<button class="icon-btn" type="button" data-act="notifs" aria-label="Notifications${c.unread ? `, ${c.unread} unread` : ''}" aria-expanded="${S.ui.notifOpen ? 'true' : 'false'}">${icon('bell')}${c.unread ? `<span class="dot">${c.unread}</span>` : ''}</button>${S.ui.notifOpen ? notifPanel() : ''}<div class="scroll-prog" aria-hidden="true"><i id="scroll-prog"></i></div></header>
-  <div class="content" id="content" tabindex="-1">${banners()}${view === 'job' ? '<a class="back" href="#jobs">&larr; All jobs</a>' : pageTabs(view)}${body}</div><button class="to-top" type="button" data-act="to-top" id="to-top" aria-label="Back to top" hidden>${icon('arrowUp')}</button></main></div>`;
+  <a class="icon-btn" href="#help" aria-label="Help: how this site works" title="Help: how this site works">${icon('help')}</a><a class="icon-btn" href="#chat" aria-label="Ask AI" title="Ask AI">${icon('chat')}</a>${themeSeg()}<button class="icon-btn" type="button" data-act="notifs" aria-label="Notifications${c.unread ? `, ${c.unread} unread` : ''}" aria-expanded="${S.ui.notifOpen ? 'true' : 'false'}">${icon('bell')}${c.unread ? `<span class="dot">${c.unread}</span>` : ''}</button>${S.ui.notifOpen ? notifPanel() : ''}<div class="scroll-prog" aria-hidden="true"><i id="scroll-prog"></i></div></header>
+  <div class="content" id="content" tabindex="-1">${banners()}${view === 'job' ? '<a class="back" href="#jobs">&larr; All jobs</a>' : pageTabs(view)}${PAGE_HELP[view] ? `<p class="page-help">${PAGE_HELP[view]}</p>` : ''}${body}</div><button class="to-top" type="button" data-act="to-top" id="to-top" aria-label="Back to top" hidden>${icon('arrowUp')}</button></main></div>`;
 }
 const THEMES = [['light', 'Light', 'sun'], ['dark', 'Dark', 'moon'], ['auto', 'Auto', 'auto']];
 function themeSeg() { const cur = Theme.get(); return `<div class="seg" role="group" aria-label="Theme">${THEMES.map(([k, l, ic]) => `<button type="button" data-act="theme" data-theme="${k}" aria-pressed="${cur === k}" title="${k === 'auto' ? 'Auto: follow your device setting' : l + ' theme'}" aria-label="${l} theme">${icon(ic)}</button>`).join('')}</div>`; }
@@ -119,17 +134,34 @@ function searchCard() {
     ${!run && last && !(last.newIds || []).length ? `<p class="small">Nothing new this time.${Object.keys(S.jobs).length ? '' : ' Try broader titles or more cities in <a href="#preferences">Job preferences</a>, add companies, or import a posting you found elsewhere.'}</p>` : ''}
   </section>`;
 }
-function setupSteps() {
-  const hasProfile = !!(S.profile && (S.profile.name || (S.profile.skills || []).length));
-  const hasPrefs = !!(S.prefs && (S.prefs.titles || []).length);
-  const searched = !!(S.meta && S.meta.search) || Object.keys(S.jobs).length > 0;
-  const started = Object.values(S.jobs).some(j => !['Discovered', 'Analyzed', 'Archived'].includes(j.stage));
-  return [
-    { done: hasProfile, title: 'Add your resume', text: 'Upload a PDF or DOCX. Everything else is built from it.', cta: `<a class="btn sm ${hasProfile ? '' : 'primary'}" href="#resumes">${hasProfile ? 'Review' : icon('upload') + 'Upload resume'}</a>` },
-    { done: hasPrefs, title: 'Say what job you want', text: 'Job titles and cities, in your own words.', cta: `<a class="btn sm ${hasProfile && !hasPrefs ? 'primary' : ''}" href="#preferences">${hasPrefs ? 'Edit' : 'Set preferences'}</a>` },
-    { done: searched, title: 'Search open roles', text: `We check ${boardsFor(S.notify).length} company career pages and keep the roles that fit you.`, cta: `<button class="btn sm ${hasProfile && hasPrefs && !searched ? 'primary' : ''}" type="button" data-act="find-jobs" ${hasPrefs && !S.ui.searching ? '' : 'disabled'}>${icon('search')}${S.ui.searching ? 'Searching…' : 'Search now'}</button>` },
-    { done: started, title: 'Apply to your first match', text: 'Open a match and review the tailored resume. Nothing is sent until you approve it.', cta: `<a class="btn sm ${searched && !started ? 'primary' : ''}" href="#jobs">See matches</a>` },
-  ];
+const RESUME_ACCEPT = '.pdf,.docx,.txt,.md,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain';
+const resumeInput = `<input type="file" id="resume-file" class="sr-only" accept="${RESUME_ACCEPT}">`;
+const hasProfile = () => !!(S.profile && (S.profile.name || (S.profile.skills || []).length));
+const currentReview = () => { const r = latestResume(); return r && hasProfile() ? resumeReview(r.text, S.profile, Object.values(S.jobs)) : null; };
+/** The first thing a new visitor sees: one action, explained in plain words. */
+function startCard() {
+  return `<section class="card hero-start"><div class="stack" style="gap:6px"><span class="eyebrow">Welcome. This takes about a minute.</span><h2>Start here: upload your resume</h2><p class="prose">That is the only thing you need to do. We read it, choose the jobs that fit you, search for open positions, and tell you how to make your resume better.</p></div>
+  <label class="drop big" id="drop" for="resume-file">${icon('upload')}<b>Choose your resume file</b><span class="btn primary">Choose file</span><span class="muted small">PDF, Word (.docx) or text. You can also drag your file onto this box.</span>${resumeInput}</label>
+  <ol class="what-next"><li><b>1</b><span>We read your skills, projects and education.</span></li><li><b>2</b><span>We search real jobs that are open now and show how well you fit each one.</span></li><li><b>3</b><span>We show what to fix in your resume. Nothing is sent to any employer without your approval.</span></li></ol>
+  <details class="small"><summary class="muted" style="cursor:pointer">I don’t have a file. Let me paste my resume text instead</summary><form novalidate class="stack" data-form="paste-resume" style="margin-top:8px"><textarea name="text" id="paste-resume" aria-label="Resume text" rows="6" placeholder="Paste the full text of your resume here"></textarea><div class="row"><button class="btn primary" type="submit">Use this text</button></div></form></details>
+  <p class="tiny muted">Your resume is private to your account. <a href="#help">How does this site work?</a></p></section>`;
+}
+function youCard() {
+  const p = S.profile; const sk = (p.skills || []).filter(s => skillCat(s) !== 'Soft skill').slice(0, 10);
+  return `<section class="card you"><div class="card-h"><h2>${esc(p.name || 'Your profile')}</h2><span class="muted small">${esc([p.experienceLevel, p.location].filter(Boolean).join(' · '))}</span><span class="sp"></span><a class="btn sm" href="#profile">Check my details</a><label class="btn sm" for="resume-file">${icon('upload')}Upload a new resume</label>${resumeInput}</div>
+  ${sk.length ? `<div class="stack" style="gap:4px"><span class="small muted">Skills we found in your resume</span>${chipList(sk)}</div>` : ''}<p class="tiny muted">Something wrong? <a href="#profile">Fix it in My details</a>. Jobs are matched using this.</p></section>`;
+}
+/** Shown when a profile exists but no job titles are chosen yet. */
+function suggestCard() {
+  const t = suggestTitles(S.profile);
+  return `<section class="card"><div class="card-h"><h2>What job should we look for?</h2></div>${t.length ? `<p class="small muted prose">From your resume, these roles fit you. You can change them any time.</p><div class="stack">${t.slice(0, 4).map(x => `<div class="row small"><span class="chip acc">${esc(x.title)}</span><span class="muted">${esc(x.why)}</span></div>`).join('')}</div><div class="row"><button class="btn primary" type="button" data-act="use-suggested">${icon('search')}Use these and search for jobs</button><a class="btn" href="#preferences">I want something else</a></div>` : `<p class="small muted prose">We could not tell which role fits from the resume. Tell us in your own words, for example “Python developer in Hyderabad”.</p><div class="row"><a class="btn primary" href="#preferences">Tell us the job I want</a></div>`}</section>`;
+}
+const reviewTone = n => n >= 85 ? 'good' : n >= 60 ? 'warn' : 'bad';
+function tipsCard() {
+  const rv = currentReview(); if (!rv) return '';
+  const todo = rv.items.filter(x => x.level !== 'good');
+  return `<section class="card"><div class="card-h"><h2>Make your resume stronger</h2><span class="pill ${reviewTone(rv.score)}">${rv.score}/100 · ${esc(rv.label)}</span><span class="sp"></span><a class="btn sm" href="#resumecheck">${todo.length ? `See all ${todo.length} tip${todo.length === 1 ? '' : 's'}` : 'Open resume check'}</a></div>
+  ${todo.length ? `<ul class="list">${todo.slice(0, 3).map(x => `<li><span class="pill ${x.level === 'fix' ? 'bad' : 'warn'}">${x.level === 'fix' ? 'Fix first' : 'Improve'}</span><span><b>${esc(x.title)}.</b> ${esc(x.why)}</span></li>`).join('')}</ul>` : '<p class="small">Nothing to fix. Your resume covers what recruiters look for.</p>'}</section>`;
 }
 function hbars(items, { unit = '', max } = {}) {
   const mx = max || Math.max(1, ...items.map(i => i.value));
@@ -147,9 +179,9 @@ function vbars(data, { h = 160, color = 'var(--accent)', fmt = v => v } = {}) {
 /* ============ Views ============ */
 const V = {};
 V.dashboard = () => {
+  if (!hasProfile()) return startCard();
   const A = analytics(); const J = Object.values(S.jobs);
   const tiles = [['Jobs found', 'Total jobs found', A.total, 'jobs'], ['Strong matches', 'Jobs scoring 70 or more', A.matching, 'jobs'], ['Applied', 'Applications submitted', A.applied, 'tracker'], ['Interviews', 'Interviews scheduled', A.interviews, 'interviews']];
-  const steps = setupSteps(); const setupDone = steps.slice(0, 3).every(x => x.done);
   const awaiting = J.filter(j => j.stage === 'AwaitingApproval' || j.stage === 'Approved');
   const upcoming = J.flatMap(j => ((j.app && j.app.interviews) || []).filter(iv => new Date(iv.at) > Date.now() - 3600e3).map(iv => ({ j, iv }))).sort((a, b) => a.iv.at.localeCompare(b.iv.at)).slice(0, 4);
   const top = J.filter(j => j.match && ['Analyzed', 'Shortlisted', 'ResumeGenerated'].includes(j.stage) && !isClosed(j)).sort((a, b) => b.match.score - a.match.score).slice(0, 5);
@@ -157,13 +189,13 @@ V.dashboard = () => {
   awaiting.forEach(j => attention.push(`<li>${j.closed ? '<span class="pill bad">Closed</span>' : stagePill(j.stage)}<span><a href="#job-${j.id}">${esc(j.title)} · ${esc(j.company)}</a> — ${j.closed ? 'the employer has taken this role down' : j.stage === 'Approved' ? 'approved, ready to submit' : 'review and approve before anything is sent'}</span></li>`));
   J.filter(j => j.closed && ['Shortlisted', 'ResumeGenerated'].includes(j.stage)).forEach(j => attention.push(`<li><span class="pill bad">Closed</span><span><a href="#job-${j.id}">${esc(j.title)} · ${esc(j.company)}</a> — no longer listed; archive it or check the posting</span></li>`));
   upcoming.forEach(({ j, iv }) => attention.push(`<li><span class="pill good">Interview</span><span>${esc(fmtDT(iv.at))} · <a href="#job-${j.id}">${esc(j.company)}</a> (${esc(iv.type || 'Interview')}). <a href="#interviews">Prepare</a></span></li>`));
-  const run = S.ui.searching;
-  const setup = setupDone ? '' : `<section class="card setup"><div class="card-h"><h2>Get started in 4 steps</h2><p>${steps.filter(x => x.done).length} of ${steps.length} done</p></div>
-  <ol class="steps">${steps.map((x, i) => `<li class="step ${x.done ? 'done' : ''}${!x.done && steps.slice(0, i).every(y => y.done) ? ' next' : ''}"><span class="step-n" aria-hidden="true">${x.done ? icon('check') : i + 1}</span><div class="stack" style="gap:2px;flex:1;min-width:0"><b>${x.title}${x.done ? ' <span class="sr-only">(done)</span>' : ''}</b><span class="small muted">${x.text}</span></div>${x.cta}</li>`).join('')}</ol></section>`;
-  return `${setup}${setupDone ? searchCard() : (run ? `<section class="card">${searchStatus()}</section>` : '')}
+  const run = S.ui.searching; const hasPrefs = !!(S.prefs && (S.prefs.titles || []).length);
+  return `${youCard()}
+  ${hasPrefs ? searchCard() : (run ? `<section class="card">${searchStatus()}</section>` : suggestCard())}
   ${A.total ? `<div class="stats">${tiles.map(([l, full, v, h]) => `<a class="stat" href="#${h}" aria-label="${esc(full)}: ${v}"><b class="num" data-count="${v}">${v}</b><span>${esc(l)}</span></a>`).join('')}</div>` : ''}
-  ${attention.length ? `<section class="card"><div class="card-h"><h2>Needs your attention</h2><span class="sp"></span><a class="btn sm" href="#approvals">To approve</a></div><ul class="list">${attention.join('')}</ul></section>` : ''}
-  ${A.total ? `<section class="card"><div class="card-h"><h2>Best matches</h2><span class="sp"></span><a class="btn sm" href="#jobs">All jobs</a></div>${top.length ? `<div class="stack">${top.map(jobCard).join('')}</div>` : emptyState('No open matches right now', 'Search again, or widen the titles and cities in your preferences.')}</section>` : ''}`;
+  ${attention.length ? `<section class="card"><div class="card-h"><h2>Needs your attention</h2><span class="sp"></span><a class="btn sm" href="#approvals">Waiting for my OK</a></div><ul class="list">${attention.join('')}</ul></section>` : ''}
+  ${A.total ? `<section class="card"><div class="card-h"><h2>Best matches</h2><span class="sp"></span><a class="btn sm" href="#jobs">All jobs</a></div>${top.length ? `<div class="stack">${top.map(jobCard).join('')}</div>` : emptyState('No open matches right now', 'Search again, or widen the titles and cities in your preferences.')}</section>` : ''}
+  ${tipsCard()}`;
 };
 
 V.chat = () => {
@@ -204,18 +236,60 @@ V.profile = () => {
 V.resumes = () => {
   const R = Object.values(S.resumes).sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt));
   const Vs = Object.values(S.versions).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-  return `<div class="card"><div class="card-h"><h2>Upload your resume</h2><p>PDF, DOCX or TXT. You review the profile it builds before anything is saved.</p></div>
-  <label class="drop" id="drop" for="resume-file"><b>Drop your resume here or choose a file</b><span class="muted small">Your original text is stored once and never changed.</span><input type="file" id="resume-file" accept=".pdf,.docx,.txt,.md,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" style="display:none"></label>
+  return `<div class="card"><div class="card-h"><h2>Upload your resume</h2><p>PDF, Word or text. We read it and set everything up for you.</p></div>
+  <label class="drop" id="drop" for="resume-file"><b>Drop your resume here or choose a file</b><span class="muted small">Your original text is stored once and never changed. Uploading again lets you choose whether to add to or replace your profile.</span>${resumeInput}</label>
   <details><summary class="small muted" style="cursor:pointer">Or paste resume text</summary><form novalidate class="stack" data-form="paste-resume" style="margin-top:8px"><textarea name="text" id="paste-resume" aria-label="Resume text" rows="6" placeholder="Paste the full text of your resume"></textarea><div class="row"><button class="btn" type="submit">Read pasted text</button></div></form></details></div>
   <div class="card"><div class="card-h"><h2>Your uploaded resumes</h2></div>${R.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>File</th><th>Uploaded</th><th>Type</th><th class="r">Characters</th><th></th></tr></thead><tbody>${R.map(r => `<tr><td>${esc(r.filename)}</td><td>${fmtDT(r.uploadedAt)}</td><td>${esc(r.kind.toUpperCase())}</td><td class="r num">${r.text.length.toLocaleString('en-IN')}</td><td class="r"><button class="btn sm" type="button" data-act="view-original" data-id="${r.id}">View text</button> <button class="btn sm" type="button" data-act="reparse" data-id="${r.id}">Re-extract profile</button></td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">No resume uploaded yet.</p>'}</div>
   <div class="card"><div class="card-h"><h2>Tailored resumes</h2><p>One per job. Older versions stay available.</p></div>${Vs.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Job</th><th>Version</th><th class="r">ATS coverage</th><th>Engine</th><th>Created</th><th></th></tr></thead><tbody>${Vs.map(v => { const j = S.jobs[v.jobId]; return `<tr><td>${j ? `<a href="#job-${j.id}">${esc(j.title)} · ${esc(j.company)}</a>` : '<span class="muted">Deleted job</span>'}</td><td class="num">v${v.version}</td><td class="r num">${v.coverage}%</td><td>${engineTag(v.engine)}</td><td>${fmtDT(v.createdAt)}</td><td class="r" style="white-space:nowrap"><button class="btn sm" type="button" data-act="preview-version" data-id="${v.id}">Preview</button> <button class="btn sm" type="button" data-act="compare-version" data-id="${v.id}">Compare</button> <button class="btn sm" type="button" data-act="dl-pdf" data-id="${v.id}">PDF</button> <button class="btn sm" type="button" data-act="dl-docx" data-id="${v.id}">DOCX</button></td></tr>`; }).join('')}</tbody></table></div>` : '<p class="muted">Generate a tailored resume from any job page.</p>'}</div>`;
+};
+
+const tipItem = x => `<li class="tip ${x.level}"><div class="row"><span class="pill ${x.level === 'fix' ? 'bad' : 'warn'}">${x.level === 'fix' ? 'Fix first' : 'Improve'}</span><b>${esc(x.title)}</b></div><p class="small">${esc(x.why)}</p><p class="small"><b>How:</b> ${esc(x.how)}</p>${x.examples && x.examples.length ? `<ul class="small ex">${x.examples.map(e => `<li>“${esc(e)}”</li>`).join('')}</ul>` : ''}${x.fix && x.fix.text ? `<blockquote class="draft">${esc(x.fix.text)}</blockquote>` : ''}${x.fix || x.go ? `<div class="row">${x.fix ? `<button class="btn sm primary" type="button" data-act="${x.fix.act}" data-text="${esc(x.fix.text)}">${esc(x.fix.label)}</button>` : ''}${x.go ? `<a class="btn sm" href="#${x.go}">${esc(x.goLabel || 'Open')}</a>` : ''}</div>` : ''}</li>`;
+V.resumecheck = () => {
+  const rv = currentReview();
+  if (!rv) return `<div class="card">${emptyState('No resume to check yet', 'Upload your resume and we will tell you what to improve, in plain words.', '<a class="btn primary" href="#resumes">Upload my resume</a>')}</div>`;
+  const todo = rv.items.filter(x => x.level !== 'good'), ok = rv.items.filter(x => x.level === 'good');
+  const col = { good: 'var(--good)', warn: 'var(--warn)', bad: 'var(--bad)' }[reviewTone(rv.score)];
+  return `<div class="card"><div class="row" style="gap:16px;align-items:flex-start"><div class="score lg" style="--v:${rv.score};--c:${col}" data-v="${rv.score}" role="img" aria-label="Resume score ${rv.score} out of 100"></div>
+  <div class="stack" style="gap:6px;flex:1;min-width:220px"><h2>Your resume: ${esc(rv.label)}</h2><p class="small muted prose">${todo.length ? `We found ${todo.length} thing${todo.length === 1 ? '' : 's'} to improve. Start at the top: the first ones help the most.` : 'Nothing to fix. Nice work.'} This check only reads your resume. We never add skills or experience you did not write.</p></div>
+  <div class="stack" style="gap:6px"><button class="btn" type="button" data-act="dl-my-pdf">${icon('dl')}Download clean copy (PDF)</button><button class="btn" type="button" data-act="dl-my-docx">${icon('dl')}Download clean copy (Word)</button></div></div>
+  <p class="tiny muted">The clean copy is built from <a href="#profile">My details</a>, so fix details there first. To change the original file, edit it in Word or Google Docs and upload it again on the <a href="#resumes">Resume</a> tab.</p></div>
+  ${todo.length ? `<div class="card"><div class="card-h"><h2>What to improve</h2></div><ol class="tips">${todo.map(tipItem).join('')}</ol></div>` : ''}
+  ${rv.gaps.length ? `<div class="card"><h2>Skills your matching jobs ask for</h2><p class="small muted prose">These appear in jobs we found for you but not on your resume. If you really have a skill, add it. If you do not, treat it as something to learn. Only add what is true.</p><div class="chips">${rv.gaps.map(g => `<span class="chip pref">${esc(g.skill)} <span class="tiny">${g.count} of ${g.of} jobs</span></span>`).join('')}</div><div class="row"><a class="btn sm" href="#profile">Add skills in My details</a></div></div>` : ''}
+  <div class="card"><h2>Next: tailor it for a job</h2><p class="small muted prose">Open any job in <a href="#jobs">Jobs for you</a> and press “Prepare application”. We rewrite your resume to highlight what that job asks for, using only facts from your profile. You approve it before anything is sent.</p></div>
+  ${ok.length ? `<details class="card more"><summary><b>What is already good (${ok.length})</b></summary><ul class="list small" style="margin-top:8px">${ok.map(x => `<li><span class="pill good nodot">✓</span><span>${esc(x.title)}</span></li>`).join('')}</ul></details>` : ''}`;
+};
+
+V.help = () => {
+  const faq = [
+    ['Is anything sent to employers automatically?', 'No. We prepare everything, then wait. Nothing is sent until you approve it, and you finish by pressing submit on the employer’s own application page.'],
+    ['Who can see my resume?', 'Only you. It is saved in your private account. Other people with an account cannot read your data.'],
+    ['Where do the jobs come from?', 'From the career pages that companies publish themselves (Greenhouse, Lever, Ashby and SmartRecruiters) and from remote job feeds. Only roles that are open right now are shown. LinkedIn and Naukri do not allow automatic search, so paste a job from there under “Add more jobs”.'],
+    ['I see few or no jobs. Why?', 'We search a set list of companies. Try a wider job title or more cities under “What job I want”, or add more companies under “Add more jobs”.'],
+    ['What does the number on a job mean?', 'How well your resume fits that job, out of 100. 70 or more is a strong fit. Open the job to see the reasons: skills, experience, location and pay.'],
+    ['My resume is a scan or photo. What now?', 'We can only read text. Upload a Word or text-based PDF file, or paste the text of your resume on the Home page.'],
+    ['Do I need an AI key?', 'No. Everything works without one. A free Gemini key (Settings) only adds optional AI-written wording.'],
+    ['Can I use this on my phone?', 'Yes. Open the site in your phone browser and choose “Add to Home screen”.'],
+  ];
+  const words = [
+    ['Match score', 'A number from 0 to 100 showing how well your resume fits a job.'],
+    ['Tailored resume', 'A copy of your resume that highlights what one particular job asks for. It uses only facts from your profile.'],
+    ['ATS', 'Software that employers use to filter resumes by keywords. “ATS coverage” is the share of a job’s keywords your resume contains.'],
+    ['Approve', 'Your “yes, this looks right”. Nothing leaves this site without it.'],
+    ['LPA', 'Lakhs per annum, the yearly salary. 6 LPA means ₹6,00,000 a year.'],
+    ['Career page', 'A company’s own web page listing the jobs it has open.'],
+    ['Fresher', 'Someone with less than a year of full-time work experience.'],
+  ];
+  return `<div class="card"><h2>How this site works</h2><ol class="what-next"><li><b>1</b><span><b>Upload your resume</b> on the Home page. We read it and set up your profile for you.</span></li><li><b>2</b><span><b>See jobs for you.</b> Open <a href="#jobs">Find jobs</a>. Each job has a score and the reasons behind it.</span></li><li><b>3</b><span><b>Improve your resume.</b> <a href="#resumecheck">Resume check</a> lists what to fix, in plain words.</span></li><li><b>4</b><span><b>Apply when you are ready.</b> Open a job and press “Prepare application”. You review it, approve it, then submit on the employer’s page.</span></li></ol><div class="row"><a class="btn primary" href="#dashboard">Go to Home</a></div></div>
+  <div class="card"><h2>Common questions</h2><div class="stack">${faq.map(([q, a]) => `<details class="faq"><summary><b>${esc(q)}</b></summary><p class="small prose">${esc(a)}</p></details>`).join('')}</div></div>
+  <div class="card"><h2>Words used on this site</h2><dl class="gloss">${words.map(([w, d]) => `<div><dt>${esc(w)}</dt><dd>${esc(d)}</dd></div>`).join('')}</dl></div>`;
 };
 
 V.preferences = () => {
   const p = S.ui.prefDraft || S.prefs || { titles: [], skills: [], locations: [], workModes: [], employmentTypes: ['full_time'], companyTypes: [], industries: [] };
   const amb = (p.ambiguities && p.ambiguities.length ? p.ambiguities : prefAmbiguities(p));
   const isDraft = !!S.ui.prefDraft;
-  return `<div class="card"><div class="card-h"><h2>Describe the job you want</h2></div><p class="small muted">Write it the way you would say it. We turn it into search filters you can check before anything runs.</p>
+  const sug = hasProfile() ? suggestTitles(S.profile).filter(x => !(p.titles || []).some(t => t.toLowerCase() === x.title.toLowerCase())) : [];
+  return `${sug.length ? `<div class="card"><h2>Suggested from your resume</h2><p class="small muted">Click a job to add it to your search.</p><div class="row">${sug.map(x => `<button class="btn sm" type="button" data-act="add-title" data-title="${esc(x.title)}" title="${esc(x.why)}">+ ${esc(x.title)}</button>`).join('')}</div></div>` : ''}<div class="card"><div class="card-h"><h2>Describe the job you want</h2></div><p class="small muted">Write it the way you would say it. We turn it into search filters you can check before anything runs.</p>
   <form novalidate class="stack" data-form="prefs-nl"><label class="f"><span class="sr-only">Your request</span><textarea name="text" id="prefs-text" rows="3" placeholder="Entry-level Full Stack or Python Developer jobs in Hyderabad, Bengaluru or remote. I know Python, JavaScript, React and MySQL. Salary ₹4–7 LPA.">${esc(p.raw || '')}</textarea></label><div class="row"><button class="btn primary" type="submit">Create filters</button><span class="muted small">Uses ${AI.available() && S.settings.cloudPublic ? AI.name + ', with the local parser as fallback' : 'the built-in parser'}.</span></div></form></div>
   ${isDraft ? `<div class="banner info"><b>Check these filters.</b><span>They are not saved until you confirm.</span><span class="sp"></span><button class="btn sm" type="button" data-act="prefs-discard">Discard</button><button class="btn sm primary" type="button" data-act="prefs-confirm">Confirm and save</button></div>` : ''}
   ${amb.length ? `<div class="card"><h2>Please check</h2><ul class="list small">${amb.map(a => `<li><span class="pill warn">Check</span><span>${esc(a)}</span></li>`).join('')}</ul></div>` : ''}

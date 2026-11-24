@@ -87,20 +87,37 @@ async def main():
         check('Sign-up validates email and password length', 'valid email' in await ev(p, "document.querySelector('.auth-card .banner.bad')?.innerText||''"))
         await sign_in(p, 'jay@example.com', 'secret123')
         uid = await ev(p, 'S.uid')
-        check('A new account starts empty, with a setup checklist and no sample data', await ev(p, 'S.mode') == 'cloud' and await ev(p, 'Object.keys(S.jobs).length') == 0 and await ev(p, '!S.profile') and await ev(p, "document.querySelectorAll('.setup .step').length") == 4 and not rows_of(uid, 'jobs'))
+        check('A new account starts empty, with one clear “upload your resume” card and no sample data', await ev(p, 'S.mode') == 'cloud' and await ev(p, 'Object.keys(S.jobs).length') == 0 and await ev(p, '!S.profile') and await ev(p, "!!document.querySelector('.hero-start #drop') && !document.querySelector('.setup')") and not rows_of(uid, 'jobs'))
         await p.wait_for_timeout(700)
         check('Notification settings start with your account email', next(r for r in rows_of(uid, 'notify'))['data']['email'] == 'jay@example.com')
         check('Rail shows the signed-in account and a Sign out button', 'jay@example.com' in await ev(p, "document.querySelector('.rail-foot').innerText") and await ev(p, "!!document.querySelector('.rail-foot [data-act=signout]')"))
         check('Service worker registers', await ev(p, "navigator.serviceWorker.getRegistration().then(r=>!!r)"))
         man = json.load(urllib.request.urlopen(SITE + 'manifest.webmanifest'))
         check('Web app manifest and icons are valid (installable)', man['display'] == 'standalone' and all(urllib.request.urlopen(SITE + i['src']).status == 200 for i in man['icons']))
-        check('Search is blocked until you say what job you want', await ev(p, "document.querySelector('.setup [data-act=find-jobs]').disabled"))
+        check('A first-time visitor sees one action and a plain-words explanation', 'Start here: upload your resume' in await content(p) and await ev(p, "document.querySelectorAll('.hero-start .what-next li').length") == 3 and await ev(p, "!document.querySelector('[data-act=find-jobs]')"))
         # ---- resume and preferences
-        await nav(p, 'resumes'); await ev(p, "document.querySelector('details').open = true")
+        await ev(p, "document.querySelector('.hero-start details').open = true")
         await p.fill('form[data-form=paste-resume] textarea', RESUME); await p.click('form[data-form=paste-resume] button[type=submit]')
-        await p.wait_for_selector('[data-act=profile-apply]', timeout=15000); await p.click('[data-act=profile-apply]'); await p.wait_for_timeout(900)
+        await p.wait_for_function("S.profile && S.prefs && S.meta && S.meta.search && !S.ui.searching && !document.querySelector('.flow')", timeout=40000); await p.wait_for_timeout(900)
+        check('After one upload there is no review step: the profile is saved on its own', await ev(p, "!document.querySelector('[data-act=profile-apply]')") and await ev(p, "location.hash") in ('', '#dashboard'))
         prof = next(r for r in rows_of(uid, 'profile'))['data']
         check('Resume text becomes a profile saved to your cloud database', prof['name'] == 'Asha Verma' and 'Django' in prof['skills'] and prof['education'][0]['degree'].startswith('B.Tech') and len(rows_of(uid, 'resumes')) == 1, prof)
+        auto = next(r for r in rows_of(uid, 'prefs'))['data']
+        check('Job titles, city and experience range are chosen from the resume', 'Python Developer' in auto['titles'] and 'Full Stack Developer' in auto['titles'] and auto['locations'] == ['Hyderabad', 'Remote'] and auto['expMax'] == 2 and auto['engine'] == 'resume', auto)
+        check('Jobs are searched automatically and shown on Home, with a summary of you and resume tips', await ev(p, "Object.keys(S.jobs).length") > 0 and await ev(p, "document.querySelectorAll('.job-card').length") >= 1 and await ev(p, "!!document.querySelector('.you') && /Asha Verma/.test(document.querySelector('.you').innerText)") and 'Make your resume stronger' in await content(p))
+        check('The resume check page lists what to improve, with a score and downloads', (await nav(p, 'resumecheck', 400)) is None and await ev(p, "!!document.querySelector('.score.lg') && document.querySelectorAll('.tip').length") >= 1 and await ev(p, "!!document.querySelector('[data-act=dl-my-pdf]') && !!document.querySelector('[data-act=dl-my-docx]')"), (await content(p))[:300])
+        # a draft summary is offered when the profile has none, and using it saves it
+        await ev(p, "S.profile.summary=''; save.profile()"); await nav(p, 'dashboard', 200); await nav(p, 'resumecheck', 400)
+        check('A missing summary gets a draft written only from the profile facts', await ev(p, "!!document.querySelector('.draft')") and 'Asha' not in await ev(p, "document.querySelector('.draft').innerText") and 'Python' in await ev(p, "document.querySelector('.draft').innerText"))
+        await p.click('[data-act=apply-summary]'); await p.wait_for_timeout(700)
+        check('“Use this summary” saves it to the profile in your cloud database', 'Python' in next(r for r in rows_of(uid, 'profile'))['data']['summary'] and await ev(p, "!document.querySelector('.draft')"))
+        # uploading a different resume while a profile exists still asks first
+        await nav(p, 'resumes'); await p.set_input_files('#resume-file', files=[{'name': 'second.txt', 'mimeType': 'text/plain', 'buffer': (RESUME.replace('Asha Verma', 'Asha V Verma') + ' Also built a chat app.').encode()}])
+        await p.wait_for_selector('[data-act=profile-apply]', timeout=15000)
+        check('Uploading again asks whether to add to or replace the existing profile', await ev(p, "!!document.querySelector('[data-act=profile-apply][data-mode=merge]') && !!document.querySelector('[data-act=profile-apply][data-mode=replace]')") and 'already have a profile' in await ev(p, "document.querySelector('.modal').innerText"))
+        await p.click('[data-act=dlg-no]'); await p.wait_for_timeout(300)
+        # clear the automatically found jobs so the manual-search checks below start from nothing
+        await ev(p, "Object.keys(S.jobs).forEach(id => { delete S.jobs[id]; Store.put('jobs/' + id, null); }); S.meta.search = null; S.meta.remoteAt = {}; save.meta();"); await p.wait_for_timeout(900)
         await nav(p, 'preferences'); await p.fill('#prefs-text', 'Find entry-level Python Developer and Full Stack Developer jobs in Hyderabad, Bengaluru and Chennai or remote. 0-2 years, 4-8 LPA')
         await p.click('form[data-form=prefs-nl] button[type=submit]'); await p.wait_for_timeout(500); await p.click('[data-act=prefs-confirm]'); await p.wait_for_timeout(800)
         prefs = next(r for r in rows_of(uid, 'prefs'))['data']
@@ -120,9 +137,20 @@ async def main():
         await p.wait_for_timeout(1200)
         check('Found jobs are saved to your cloud database', len(rows_of(uid, 'jobs')) == 7)
         await nav(p, 'dashboard')
-        check('Dashboard: setup is complete, totals and top matches are shown', not await ev(p, "!!document.querySelector('.setup')") and await ev(p, "document.querySelectorAll('.stat').length") == 4 and await ev(p, "document.querySelectorAll('.job-card').length") >= 3)
-        check('Navigation is six plain sections', await ev(p, "[...document.querySelectorAll('.nav a')].map(a => a.querySelector('span').textContent).join('|')") == 'Home|Find jobs|Applications|My profile|Insights|Settings')
-        SECTION_OF = {'dashboard': 'Home', 'discover': 'Find jobs', 'jobs': 'Find jobs', 'tracker': 'Applications', 'approvals': 'Applications', 'interviews': 'Applications', 'offers': 'Applications', 'resumes': 'My profile', 'profile': 'My profile', 'preferences': 'My profile', 'analytics': 'Insights', 'shortlisting': 'Insights', 'rejections': 'Insights', 'config': 'Settings', 'alerts': 'Settings', 'activity': 'Settings'}
+        check('Dashboard: the start card is gone; totals and top matches are shown', not await ev(p, "!!document.querySelector('.hero-start')") and await ev(p, "document.querySelectorAll('.stat').length") == 4 and await ev(p, "document.querySelectorAll('.job-card').length") >= 3)
+        check('Navigation is six plain sections', await ev(p, "[...document.querySelectorAll('.nav a')].map(a => a.querySelector('span').textContent).join('|')") == 'Home|Find jobs|Applications|My profile|Progress|Settings')
+        await nav(p, 'help', 300); ht = await content(p)
+        check('A Help page explains the steps, answers common questions and defines the jargon', 'How this site works' in ht and 'Common questions' in ht and 'Words used on this site' in ht and await ev(p, "document.querySelectorAll('.faq').length") >= 6 and await ev(p, "!!document.querySelector('.icon-btn[href=\"#help\"]')"))
+        await nav(p, 'jobs', 300)
+        check('Every page says in one plain sentence what it is for', await ev(p, "!!document.querySelector('.page-help') && document.querySelector('.page-help').innerText.length > 30") and await ev(p, "[...document.querySelectorAll('.page-tabs a')].map(a => a.textContent.trim()).join('|')") == 'Jobs for you|Add more jobs')
+        await nav(p, 'resumes', 300)
+        check('My profile tabs use plain words', await ev(p, "[...document.querySelectorAll('.page-tabs a')].map(a => a.textContent.trim()).join('|')") == 'Resume|Resume check|My details|What job I want')
+        await nav(p, 'preferences', 300)
+        check('Job titles that fit the resume can be added with one click', await ev(p, "[...document.querySelectorAll('[data-act=add-title]')].some(b => /Backend Developer/.test(b.textContent))"))
+        await p.click('[data-act=add-title]'); await p.wait_for_timeout(700)
+        check('…and the choice is saved', len(next(r for r in rows_of(uid, 'prefs'))['data']['titles']) >= 5)
+        await ev(p, "S.prefs.titles.pop(); save.prefs(); rescoreAll()"); await p.wait_for_timeout(500)  # put the saved search back as it was for the checks below
+        SECTION_OF = {'dashboard': 'Home', 'discover': 'Find jobs', 'jobs': 'Find jobs', 'tracker': 'Applications', 'approvals': 'Applications', 'interviews': 'Applications', 'offers': 'Applications', 'resumes': 'My profile', 'resumecheck': 'My profile', 'profile': 'My profile', 'preferences': 'My profile', 'analytics': 'Progress', 'shortlisting': 'Progress', 'rejections': 'Progress', 'config': 'Settings', 'alerts': 'Settings', 'activity': 'Settings'}
         bad = []
         for h, sec in SECTION_OF.items():
             await nav(p, h, 150)
@@ -135,7 +163,7 @@ async def main():
         txt = await ev(p, "document.querySelector('.job-card').innerText")
         check('Job cards show the match, not internal pipeline words', 'match' in txt.lower() and 'Analyzed' not in txt and 'not stated' not in txt.lower(), txt)
         await nav(p, 'dashboard', 200)
-        check('Home stays short: search, four totals and the best matches only', await ev(p, "!document.querySelector('form[data-form=quick-chat]')") and await ev(p, "document.querySelectorAll('.content > section.card, .content > .stats').length") <= 4)
+        check('Home stays short: you, search, four totals, best matches and resume tips only', await ev(p, "!document.querySelector('form[data-form=quick-chat]')") and await ev(p, "document.querySelectorAll('.content > section.card, .content > .stats').length") <= 5)
         await p.reload(); await settle(p)
         check('Session and data survive a reload', await ev(p, 'S.mode') == 'cloud' and await ev(p, 'Object.keys(S.jobs).length') == 7)
         await nav(p, 'jobs'); await search(p)
@@ -274,7 +302,7 @@ async def main():
         await p.click('[data-act=auth-mode][data-mode=signin]'); await sign_in(p, 'jay@example.com', 'newsecret456')
         await nav(p, 'config'); await p.click('[data-act=delete-all]'); await p.fill('#dlg-input', 'DELETE'); await p.click('[data-act=dlg-yes]'); await p.wait_for_timeout(1200)
         left = [r['kind'] for r in rows_of(uid)]
-        check('Delete all erases your cloud rows and returns to the setup checklist', left == [] and await ev(p, "!!document.querySelector('.setup')"), left)
+        check('Delete all erases your cloud rows and returns to the start card', left == [] and await ev(p, "!!document.querySelector('.hero-start')"), left)
         await p.click('.rail-foot [data-act=signout]'); await p.wait_for_timeout(500)
         # ---- sample data left by the earlier version is removed on sign-in
         await p.click('[data-act=auth-mode][data-mode=signup]'); await sign_in(p, 'old@example.com', 'secret123'); uid2 = await ev(p, 'S.uid')
@@ -291,7 +319,7 @@ async def main():
         await ctx.close()
         # ---- no Supabase keys: single-browser mode
         ctx3, p3 = await page_for(b, cloud=False); await p3.goto(SITE); await settle(p3)
-        check('Without Supabase keys the site works in this browser only, starting empty', await ev(p3, 'S.mode') == 'local' and await ev(p3, "!!document.querySelector('.setup')") and 'saved in this browser only' in await content(p3))
+        check('Without Supabase keys the site works in this browser only, starting empty', await ev(p3, 'S.mode') == 'local' and await ev(p3, "!!document.querySelector('.hero-start')") and 'saved in this browser only' in await content(p3))
         await nav(p3, 'alerts')
         check('…and explains that alerts need the cloud setup', 'Connect the cloud database first' in await content(p3))
         await ctx3.close()

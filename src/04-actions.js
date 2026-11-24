@@ -71,34 +71,77 @@ async function importJobs(url, text) {
   return created;
 }
 
-/* ============ Resume upload & profile extraction ============ */
+/* ============ Resume upload and automatic setup ============
+   One upload does everything: read the file, build the profile, choose job titles, search, and check the resume.
+   If a profile already exists, nothing is overwritten without asking. */
+const Flow = {
+  el: null,
+  steps: [['read', 'Reading your resume'], ['profile', 'Finding your skills, projects and education'], ['titles', 'Choosing job titles that fit you'], ['search', 'Searching open jobs for you'], ['review', 'Checking your resume for improvements']],
+  open() {
+    if (this.el) return;
+    const el = document.createElement('div'); el.className = 'overlay-busy';
+    el.innerHTML = `<div class="box flow" role="dialog" aria-modal="true" aria-label="Setting things up for you"><h2>Setting things up for you</h2><p class="small muted">This takes about a minute. You don’t need to do anything.</p><ol class="flow-steps">${this.steps.map(([k, t]) => `<li data-k="${k}"><span class="flow-dot" aria-hidden="true"></span><span>${t}</span></li>`).join('')}</ol><p class="small muted flow-note" id="flow-note" role="status" aria-live="polite"></p></div>`;
+    document.body.appendChild(el); this.el = el;
+  },
+  step(k, note = '') {
+    if (!this.el) return; let before = true;
+    this.el.querySelectorAll('.flow-steps li').forEach(li => { if (li.dataset.k === k) { before = false; li.className = 'now'; } else li.className = before ? 'done' : ''; });
+    this.note(note);
+  },
+  note(t) { const n = this.el && this.el.querySelector('#flow-note'); if (n) n.textContent = t || ''; },
+  async finish() { if (!this.el) return; this.el.querySelectorAll('.flow-steps li').forEach(li => { li.className = 'done'; }); this.note('All done.'); await sleep(450); this.close(); },
+  close() { if (this.el) { this.el.remove(); this.el = null; } },
+};
 async function handleResumeFile(file) {
+  Flow.open(); Flow.step('read', file.name);
   let res;
-  try { res = await Busy.local(`Reading ${file.name}…`, () => extractFileText(file)); }
-  catch (e) { toast(e.message || 'Could not read that file.', 'bad'); return; }
+  try { res = await extractFileText(file); }
+  catch (e) { Flow.close(); toast(e.message || 'Could not read that file.', 'bad'); return; }
   await storeResume(file.name, res.kind, res.text, file.size);
 }
 async function storeResume(filename, kind, text, size) {
-  if (String(text).trim().length < 60) { toast('Almost no text was found. A scanned PDF has no text layer; paste the resume text instead.', 'bad'); return; }
+  if (String(text).trim().length < 60) { Flow.close(); toast('Almost no text was found. A scanned PDF or a photo has no text we can read. Upload a Word file, or paste the text of your resume instead.', 'bad'); return; }
+  Flow.open(); Flow.step('read', filename);
   const r = { id: uid('r'), filename, kind, uploadedAt: nowISO(), text: String(text).slice(0, 150000), sizeBytes: size || text.length, immutable: true };
   r.hash = await sha256(r.text); S.resumes[r.id] = r; save.resume(r);
   logAgent('Career Profile Agent', 'Stored original resume', `${filename} (${r.text.length} characters, sha256 ${r.hash.slice(0, 12)}…)`);
   await extractProfileFrom(r);
 }
 async function extractProfileFrom(r) {
+  Flow.open(); Flow.step('profile');
   const local = parseResumeLocal(r.text);
   let res;
   try {
     res = await AI.route({ personal: true, label: 'Extracting your career profile…', prompt: `Extract a structured career profile from this resume. Copy facts exactly; never guess or add anything that is not written. Use "" or [] when a field is absent. ${UNTRUSTED}\n<untrusted>${r.text.slice(0, 60000)}</untrusted>\nReply with only JSON matching: ${PROFILE_SCHEMA}`, validate: o => o && (o.name || (o.skills || []).length), local: async () => local });
-  } catch (e) { if (e && e.code === 'cancelled') res = { out: local, engine: 'local' }; else throw e; }
+  } catch (e) { if (e && e.code === 'cancelled') res = { out: local, engine: 'local' }; else { Flow.close(); throw e; } }
   const ex = normalizeProfile(res.engine === 'ai' ? res.out : local);
   logAgent('Career Profile Agent', 'Extracted profile', `${ex.skills.length} skills, ${ex.projects.length} projects, ${ex.experiences.length} roles, ${ex.education.length} education entries`, res.engine);
-  showProfileReview(ex, res.engine);
+  const has = S.profile && (S.profile.name || (S.profile.skills || []).length);
+  const empty = !(ex.name || ex.skills.length);
+  if (has || empty) { Flow.close(); showProfileReview(ex, res.engine, empty); return; }
+  commitProfile(ex, 'replace');
+  await finishSetup();
 }
+/** After the profile is saved: pick job titles if none are set, search, and land on the right page. */
+async function finishSetup() {
+  Flow.open(); Flow.step('titles');
+  const hadPrefs = !!(S.prefs && (S.prefs.titles || []).length); let made = false; let res = null;
+  if (!hadPrefs) {
+    const sug = suggestPrefs(S.profile);
+    if (sug.titles.length) { sug.savedAt = nowISO(); S.prefs = sug; save.prefs(); rescoreAll(); made = true; logAgent('Career Profile Agent', 'Chose job titles from your resume', sug.titles.join(', ')); }
+  }
+  if (made) { Flow.step('search'); res = await runLiveSearch({ quiet: true }); }
+  Flow.step('review'); await Flow.finish();
+  go(made || !hadPrefs ? 'dashboard' : 'resumecheck');
+  if (made) toast(res && res.fresh.length ? `Done! We found ${res.fresh.length} open job${res.fresh.length === 1 ? '' : 's'} for you.` : 'Your resume is ready. We could not find new jobs just now, so press “Search again” in a moment.');
+  else if (!hadPrefs) toast('We read your resume. Now tell us what job you want, and we will search.');
+  else toast('Profile updated. Here is how your resume looks now.');
+}
+
 let _pendingProfile = null;
-function showProfileReview(ex, engine) {
+function showProfileReview(ex, engine, empty = false) {
   _pendingProfile = ex; const has = S.profile && (S.profile.name || (S.profile.skills || []).length);
-  openModal(`<div class="row"><h2>Review the extracted profile</h2>${engineTag(engine)}</div><p class="small muted">Check this before it is saved. You can edit everything afterwards on the Career Profile page.</p>
+  openModal(`<div class="row"><h2>Review the extracted profile</h2>${engineTag(engine)}</div>${empty ? '<div class="banner bad"><span>We could not find a name or skills in this file. It may be a scan or a photo. You can still save it and type your details by hand, or go back and upload a Word file.</span></div>' : ''}<p class="small muted">${has ? 'You already have a profile. Choose whether to add this resume to it or replace it. Nothing changes until you choose.' : 'Check this before it is saved.'} You can edit everything afterwards in My details.</p>
   <div class="grid g2"><div class="stack small"><div><b>${esc(ex.name || 'Name not found')}</b></div><div>${esc([ex.email, ex.phone, ex.location].filter(Boolean).join(' · ') || 'No contact details found')}</div><div class="muted">${esc([ex.linkedin, ex.github, ex.portfolio].filter(Boolean).join(' · '))}</div><div>Level: ${esc(ex.experienceLevel)} · ${ex.totalYears} yrs full-time</div></div>
   <div class="stack small"><b>Skills (${ex.skills.length})</b>${chipList(ex.skills)}</div></div>
   <div class="grid g3 small"><div><b>Projects (${ex.projects.length})</b><ul style="margin:4px 0;padding-left:18px">${ex.projects.map(p => `<li>${esc(p.name)}${p.technologies ? ` <span class="muted">— ${esc(p.technologies)}</span>` : ''}</li>`).join('') || '<li class="muted">None found</li>'}</ul></div>
@@ -106,8 +149,8 @@ function showProfileReview(ex, engine) {
   <div><b>Education (${ex.education.length})</b><ul style="margin:4px 0;padding-left:18px">${ex.education.map(e => `<li>${esc(e.degree)}${e.institution ? ', ' + esc(e.institution) : ''} ${esc(e.year)}</li>`).join('') || '<li class="muted">None found</li>'}</ul></div></div>
   <div class="row" style="justify-content:flex-end"><button class="btn" type="button" data-act="dlg-no">Cancel</button>${has ? '<button class="btn" type="button" data-act="profile-apply" data-mode="merge">Merge into my profile</button>' : ''}<button class="btn primary" type="button" data-act="profile-apply" data-mode="replace">${has ? 'Replace profile details' : 'Save as my profile'}</button></div>`, { wide: true });
 }
-function applyExtracted(mode) {
-  const ex = _pendingProfile; if (!ex) return; const cur = S.profile || {};
+function commitProfile(ex, mode) {
+  const cur = S.profile || {};
   const keep = { workModes: cur.workModes, employmentTypes: cur.employmentTypes, relocate: cur.relocate, noticePeriod: cur.noticePeriod, currentCtc: cur.currentCtc, expectedMin: cur.expectedMin, expectedMax: cur.expectedMax, preferredRoles: cur.preferredRoles, preferredLocations: cur.preferredLocations, workAuth: cur.workAuth };
   let p;
   if (mode === 'merge' && cur.name !== undefined) {
@@ -119,9 +162,14 @@ function applyExtracted(mode) {
     p.certifications = uniqCI([...(p.certifications || []), ...ex.certifications]); p.achievements = uniqCI([...(p.achievements || []), ...ex.achievements]);
   } else p = { ...ex, ...Object.fromEntries(Object.entries(keep).filter(([, v]) => v !== undefined)) };
   p.workModes = p.workModes || []; p.employmentTypes = p.employmentTypes || ['full_time']; p.updatedAt = nowISO();
-  S.profile = p; save.profile(); _pendingProfile = null; closeModal();
+  S.profile = p; save.profile();
   rescoreAll(); logAgent('Career Profile Agent', mode === 'merge' ? 'Merged extracted profile' : 'Saved extracted profile', `${p.skills.length} skills`);
-  toast('Profile saved. Add notice period, salary and job targets to complete it.'); go('profile');
+  return p;
+}
+async function applyExtracted(mode) {
+  const ex = _pendingProfile; if (!ex) return;
+  commitProfile(ex, mode); _pendingProfile = null; closeModal();
+  await finishSetup();
 }
 function collectProfile(form) {
   const fd = new FormData(form); const base = clone(S.ui.draft || S.profile || normalizeProfile({}));
@@ -249,6 +297,7 @@ function paintSearchProgress() {
   if (bar) bar.style.transform = `scaleX(${run.total ? Math.max(0.02, run.done / run.total) : 0.02})`;
   if (label) label.textContent = searchLabel(run);
   if (count) count.textContent = run.total ? `${run.done}/${run.total}` : '';
+  if (Flow.el) Flow.note(run.total ? `${searchLabel(run)} (${run.done} of ${run.total})` : searchLabel(run));
 }
 /** Searches the live job boards from this browser, adds new matches and flags saved roles that have closed. */
 async function runLiveSearch({ quiet = false } = {}) {
@@ -301,6 +350,23 @@ ACT['dlg-no'] = () => closeModal(false);
 ACT.skip = () => { const c = $('#content'); if (c) c.focus(); };
 ACT['to-top'] = () => { const m = $('#main'); if (m) m.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); };
 ACT['find-jobs'] = async () => { const r = await runLiveSearch(); if (r && r.fresh.length && route().view === 'dashboard') go('jobs'); };
+ACT['use-suggested'] = async () => {
+  if (!S.profile) return; const sug = suggestPrefs(S.profile);
+  if (!sug.titles.length) { toast('We could not pick job titles from your resume. Type the job you want instead.', 'bad'); return go('preferences'); }
+  sug.savedAt = nowISO(); S.prefs = sug; save.prefs(); rescoreAll(); logAgent('Career Profile Agent', 'Chose job titles from your resume', sug.titles.join(', '));
+  const r = await runLiveSearch(); if (r && r.fresh.length) go('dashboard');
+};
+ACT['add-title'] = el => {
+  const t = el.dataset.title; const base = S.ui.prefDraft || S.prefs || suggestPrefs(S.profile || {}); const p = clone(base); p.titles = uniqCI([...(p.titles || []), t]);
+  if (S.ui.prefDraft) { S.ui.prefDraft = p; return render(); }
+  p.savedAt = nowISO(); S.prefs = p; save.prefs(); rescoreAll(); logAgent('Career Profile Agent', 'Added a job title', t); toast(`Added “${t}”. Press “Search now” to look for it.`); render();
+};
+ACT['apply-summary'] = el => {
+  if (!S.profile) return; S.profile.summary = el.dataset.text || ''; S.profile.updatedAt = nowISO(); save.profile();
+  logAgent('Career Profile Agent', 'Added a summary from your resume facts', S.profile.summary.slice(0, 160)); toast('Summary added. Your tailored resumes will use it.'); render();
+};
+ACT['dl-my-pdf'] = async () => { const p = S.profile; if (!p) return; try { const blob = await Busy.local('Building PDF…', () => resumePDF(profileAsTailored(p), p)); await offerDownload(`${slug(p.name || 'resume')}-resume.pdf`, blob); } catch (e) { toast('Could not build the PDF: ' + e.message, 'bad'); } };
+ACT['dl-my-docx'] = async () => { const p = S.profile; if (!p) return; try { const blob = await Busy.local('Building DOCX…', () => makeDocx(resumeDocxParas(profileAsTailored(p), p))); await offerDownload(`${slug(p.name || 'resume')}-resume.docx`, blob); } catch (e) { toast('Could not build the DOCX: ' + e.message, 'bad'); } };
 ACT['board-remove'] = el => {
   const n = S.notify || (S.notify = DEFAULT_NOTIFY()); const ats = el.dataset.ats, token = el.dataset.token; const key = boardKey({ ats, token });
   const mine = String(n.companies[ats] || '').split(/[\s,]+/).filter(Boolean);

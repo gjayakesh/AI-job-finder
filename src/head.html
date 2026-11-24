@@ -79,7 +79,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 /* Reduce motion: nothing slides or grows; colour and opacity changes stay, and the loading spinner still turns. */
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-property:color,background-color,border-color,opacity,box-shadow!important;transition-duration:.12s!important}
-  .spin{animation-duration:1.4s!important;animation-iteration-count:infinite!important}
+  .spin,.flow-steps li.now .flow-dot{animation-duration:1.4s!important;animation-iteration-count:infinite!important}
   .rv{opacity:1!important;transform:none!important}
 }
 
@@ -415,6 +415,48 @@ svg.chart .grid-l{stroke:var(--line);stroke-width:1}
   input[type=text],input[type=email],input[type=password],input[type=tel],input[type=url],input[type=number],input[type=date],input[type=time],input[type=datetime-local],input[type=search],select,textarea{font-size:16px;min-height:44px}
 }
 @media (max-width:520px){body{font-size:16px}.small{font-size:14px}.meta{font-size:14px}.top .seg{display:none}.top h1{font-size:18px}.theme-opts{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.g4{grid-template-columns:1fr}.toasts{left:16px;right:16px}.job-card{grid-template-columns:auto 1fr}.job-card > :last-child{grid-column:1/-1}.qa{grid-template-columns:1fr}.frow{grid-template-columns:100px 1fr 54px}}
+
+/* ---- First-visit guidance: start card, setup window, resume check, help, sign-in switch ---- */
+.eyebrow{font-size:12.5px;font-weight:600;color:var(--accent);letter-spacing:.02em}
+.hero-start{gap:18px;padding:24px 26px;border-color:color-mix(in srgb,var(--accent) 35%,var(--line))}
+.hero-start h2{font-size:clamp(22px,3vw,28px);line-height:1.15}
+.hero-start .prose{font-size:15.5px;line-height:1.55;margin:0}
+.drop.big{padding:36px 20px;gap:10px;border-color:color-mix(in srgb,var(--accent) 45%,var(--line));background:var(--accent-soft)}
+.drop.big svg{width:32px;height:32px;color:var(--accent)}
+.drop.big b{font-size:17px}
+.drop:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+.what-next{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.what-next li{display:flex;gap:12px;align-items:flex-start;line-height:1.5}
+.what-next li>b{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);font:600 13px var(--f-body)}
+.page-help{margin:0;color:var(--muted);font-size:14px;max-width:72ch;line-height:1.5}
+.tips{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.tip{display:flex;flex-direction:column;gap:6px;padding:14px 0;border-top:1px solid var(--line)}
+.tip:first-child{border-top:0;padding-top:2px}
+.tip p{margin:0;line-height:1.5}
+.tip .ex{margin:0;padding-left:18px;color:var(--muted)}
+.draft{margin:0;padding:10px 12px;border-left:3px solid var(--accent);background:var(--surface-2);border-radius:0 8px 8px 0;font-size:13.5px;line-height:1.5}
+.gloss{display:grid;gap:10px;margin:0}
+.gloss>div{display:grid;grid-template-columns:minmax(110px,170px) 1fr;gap:12px}
+.gloss dt{font-weight:600}
+.gloss dd{margin:0;color:var(--muted);line-height:1.5}
+.faq{border-top:1px solid var(--line);padding-top:10px}
+.faq:first-child{border-top:0;padding-top:0}
+.faq summary{cursor:pointer}
+.faq p{margin:6px 0 0}
+.flow{min-width:min(420px,92vw)}
+.flow-steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.flow-steps li{display:flex;gap:10px;align-items:center;color:var(--muted)}
+.flow-dot{width:18px;height:18px;border-radius:50%;border:2px solid var(--line);flex:none;display:grid;place-items:center;box-sizing:border-box}
+.flow-steps li.now{color:var(--ink);font-weight:600}
+.flow-steps li.now .flow-dot{border-color:var(--accent);border-top-color:transparent;animation:sp .8s linear infinite}
+.flow-steps li.done{color:var(--ink)}
+.flow-steps li.done .flow-dot{background:var(--good);border-color:var(--good)}
+.flow-steps li.done .flow-dot::after{content:"";width:4px;height:8px;border:solid var(--surface);border-width:0 2px 2px 0;transform:rotate(45deg) translate(-1px,-1px)}
+.flow-note{min-height:1.4em;margin:0}
+.auth-switch{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:4px}
+.auth-switch a{text-align:center;padding:10px 8px;border-radius:7px;text-decoration:none;color:var(--muted);font-weight:600;font-size:14px}
+.auth-switch a.on{background:var(--surface);color:var(--accent);box-shadow:var(--shadow)}
+@media (max-width:600px){.gloss>div{grid-template-columns:1fr;gap:2px}.hero-start{padding:18px}}
 </style>
 </head>
 <body>

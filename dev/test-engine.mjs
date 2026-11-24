@@ -91,6 +91,30 @@ check('Boards: removed companies stay removed; added companies are searched', !m
 check('Boards: the board of an older saved job is read from its link', E.boardOf({ source: 'greenhouse', applyUrl: 'https://boards.greenhouse.io/acme/jobs/5551' }) === 'acme' && E.boardOf({ source: 'lever', board: 'cred' }) === 'cred');
 check('Text: HTML and entities become clean lines', E.htmlToText('<p>Build &amp; ship</p><ul><li>Python</li><li>Go</li></ul><script>x()</script>') === 'Build & ship\n- Python\n- Go');
 
+// ---- resume check and job-title suggestions
+const GOOD = `Asha Verma\nasha.verma@example.com | +91 98765 43210 | Hyderabad\nlinkedin.com/in/ashaverma | github.com/ashaverma\n\nSKILLS\nPython, Django, REST APIs, MySQL, SQL, Git, JavaScript, React, HTML, CSS\n\nPROJECTS\nPlacement Portal | Django, MySQL\n- Built a placement portal with Django and MySQL used by 300 students.\n- Designed REST APIs for job listings.\n\nEXPERIENCE\nPython Developer Intern, Brightleaf Software (Jan 2026 - Jun 2026)\n- Built REST APIs with Django REST Framework.\n\nEDUCATION\nB.Tech in Computer Science, JNTU Hyderabad, 2026, 8.1 CGPA`;
+const WEAK = `Ravi Kumar\ncool_boy1234@gmail.com\nBangalore\nOBJECTIVE\nSeeking a challenging position in a dynamic organization to utilize my skills.\nSKILLS\nExcel, SQL, Power BI\nEXPERIENCE\nData Analyst, Acme Corp (Jan 2022 - Present)\n- Responsible for preparing weekly reports for the team\n- Worked on dashboards for the sales team and helped with data cleaning tasks\n- Assisted in monthly meetings with managers\nDate of Birth: 12/03/1998\nMarital status: Single`;
+const pa = E.parseResumeLocal(GOOD), pw = E.parseResumeLocal(WEAK);
+const titlesA = E.suggestTitles(pa).map(t => t.title), titlesW = E.suggestTitles(pw).map(t => t.title);
+check('Suggest: roles held come first, then roles the skills point to', titlesA[0] === 'Python Developer' && titlesA.includes('Full Stack Developer') && titlesW[0] === 'Data Analyst', [titlesA, titlesW]);
+check('Suggest: nothing is suggested when the skills do not point to a role', E.suggestTitles({ skills: ['Communication'] }).length === 0 && E.suggestTitles(null).length === 0);
+const prefsA = E.suggestPrefs(pa), prefsW = E.suggestPrefs(pw);
+check('Prefs: a fresher gets 0–2 years and their own city plus remote; an experienced person a range around their years', prefsA.expMin === 0 && prefsA.expMax === 2 && prefsA.locations.join() === 'Hyderabad,Remote' && prefsW.expMin === 4 && prefsW.expMax === 7 && prefsW.locations[0] === 'Bengaluru', [prefsA, prefsW]);
+check('Prefs: the generated filters work with the real job matcher', E.titleMatcher(prefsA)('Python Developer - Payments') === 'strong' && E.titleMatcher(prefsA)('Account Executive') === null);
+const rA = E.resumeReview(GOOD, pa, []), rW = E.resumeReview(WEAK, pw, []);
+check('Review: a solid resume scores high and a weak one scores low', rA.score >= 80 && rW.score <= 50 && rA.score > rW.score, [rA.score, rW.score]);
+const ids = r => r.items.map(i => i.id);
+check('Review: it names the real problems (generic objective, weak verbs, no numbers, personal details, missing phone and education)', ['cliche', 'weak-verbs', 'numbers', 'personal', 'phone', 'education', 'email-pro'].every(id => ids(rW).includes(id)), ids(rW));
+check('Review: it does not complain about things that are fine', !ids(rA).some(id => ['email', 'phone', 'education', 'weak-verbs', 'numbers'].includes(id) && rA.items.find(i => i.id === id).level !== 'good'), ids(rA));
+check('Review: most important problems are listed first', rW.items[0].level === 'fix' && rW.items.findIndex(i => i.level === 'good') > rW.items.findLastIndex(i => i.level !== 'good'));
+const drafted = E.resumeReview(GOOD, { ...pa, summary: '' }, []).items.find(i => i.id === 'summary');
+check('Review: a missing summary gets a draft that uses only facts from the profile', drafted && drafted.fix && /Python Developer/.test(drafted.fix.text) && /Placement Portal/.test(drafted.fix.text) && !/\d+ years/.test(drafted.fix.text), drafted && drafted.fix);
+const jobs = [1, 2, 3, 4].map(n => ({ closed: false, match: { missingRequired: n < 4 ? ['Docker', 'AWS'] : ['Docker'] } }));
+const gaps = E.resumeReview(GOOD, pa, jobs).gaps;
+check('Review: skills that several matched jobs ask for are listed, most common first', gaps[0].skill === 'Docker' && gaps[0].count === 4 && gaps[1].skill === 'AWS' && gaps[1].count === 3, gaps);
+check('Review: a skill you already have is never listed as a gap', E.resumeReview(GOOD, pa, [{ match: { missingRequired: ['Django', 'python'] } }, { match: { missingRequired: ['Django'] } }]).gaps.length === 0);
+check('Review: empty input does not crash', E.resumeReview('', {}, []).score >= 20 && E.suggestPrefs({}).titles.length === 0 && E.draftSummary({}) === '');
+
 const failed = results.filter(r => !r[1]).length;
 console.log(`\n==== engine: ${results.length - failed} passed, ${failed} failed ====`);
 process.exit(failed ? 1 : 0);

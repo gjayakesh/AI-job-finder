@@ -10,24 +10,24 @@ V.auth = () => {
   const a = S.ui.auth; const m = a.mode;
   const field = (n, l, t, ac) => `<label class="f"><span>${l}</span><input type="${t}" name="${n}" id="auth-${n}" autocomplete="${ac}" ${n === 'email' ? `value="${esc(a.email || '')}"` : ''}></label>`;
   const story = [
-    ['Add your resume', 'Upload a PDF or DOCX. We build your profile from it, and the original file is never changed.'],
-    ['Find open jobs', `We check ${BOARD_DIRECTORY.length} company career pages and remote job feeds, and keep only roles that are open right now.`],
-    ['See why each one fits', 'Every job gets a 0–100 match score with the reasons: skills, experience, location and pay.'],
-    ['Apply when you approve', 'We tailor your resume for each job. Nothing is sent until you approve it.'],
+    ['Upload your resume', 'A PDF or Word file. We read it for you, so there is nothing to type.'],
+    ['We find jobs for you', `We pick the job titles that fit you and search ${BOARD_DIRECTORY.length} company career pages and remote job feeds. Only jobs that are open right now are kept.`],
+    ['See how well you fit', 'Every job gets a score out of 100 with simple reasons: skills, experience, city and pay.'],
+    ['Improve and apply', 'We show what to fix in your resume and tailor it for each job. Nothing is sent to an employer until you say yes.'],
   ];
   return `<div class="landing"><header class="landing-top"><div class="brand" style="padding:0"><div class="brand-mark">AC</div><div><b>${esc(CONFIG.APP_NAME)}</b><small>Job search, under your control</small></div></div>${themeSeg()}</header>
   <div class="landing-grid">
-  <section class="landing-story"><h1>Find jobs that fit your resume. Apply only when you approve.</h1>
-  <p class="lede">Free and private. It finds open roles, shows how well each one matches you, and prepares the application. Nothing is sent without you.</p>
+  <section class="landing-story"><h1>Upload your resume. We find jobs that fit it.</h1>
+  <p class="lede">Free and private. It takes about a minute. We find open jobs, show how well each one fits you, and tell you how to improve your resume. Nothing is sent to an employer without your approval.</p>
   <ol class="pipe" id="pipe">${story.map(([t, d], i) => `<li class="pipe-step"><span class="pipe-n" aria-hidden="true">${i + 1}</span><div><h2>${t}</h2><p>${d}</p></div></li>`).join('')}</ol></section>
-  <aside class="auth-card" aria-label="Your account"><h2 class="auth-title">${AUTH_TITLES[m]}</h2>
+  <aside class="auth-card" aria-label="Your account">${['signin', 'signup'].includes(m) ? `<div class="auth-switch" role="group" aria-label="Sign in or create an account"><a href="#" data-act="auth-mode" data-mode="signin" class="${m === 'signin' ? 'on' : ''}" ${m === 'signin' ? 'aria-current="true"' : ''}>I have an account</a><a href="#" data-act="auth-mode" data-mode="signup" class="${m === 'signup' ? 'on' : ''}" ${m === 'signup' ? 'aria-current="true"' : ''}>I’m new here</a></div>` : ''}<h2 class="auth-title">${AUTH_TITLES[m]}</h2>
   ${a.err ? `<div class="banner bad" role="alert"><span>${esc(a.err)}</span></div>` : ''}${a.msg ? `<div class="banner info" role="status"><span>${esc(a.msg)}</span></div>` : ''}
   <form novalidate class="stack" data-form="auth" data-mode="${m}">
     ${m !== 'newpass' ? field('email', 'Email', 'email', 'email') : ''}
     ${['signin', 'signup', 'newpass'].includes(m) ? field('password', m === 'signin' ? 'Password' : 'Password (8+ characters)', 'password', m === 'signin' ? 'current-password' : 'new-password') : ''}
     <button class="btn primary" type="submit" style="justify-content:center">${{ signin: 'Sign in', signup: 'Create account', magic: 'Send link', reset: 'Send reset link', newpass: 'Save password' }[m]}</button>
   </form>
-  <div class="stack small">${m === 'signin' ? `<a href="#" data-act="auth-mode" data-mode="signup">New here? Create an account</a><a href="#" data-act="auth-mode" data-mode="magic">Sign in with an email link instead</a><a href="#" data-act="auth-mode" data-mode="reset">Forgot password?</a>` : `<a href="#" data-act="auth-mode" data-mode="signin">Back to sign in</a>`}</div>
+  <div class="stack small">${m === 'signin' ? `<a href="#" data-act="auth-mode" data-mode="magic">Sign in with an email link instead</a><a href="#" data-act="auth-mode" data-mode="reset">Forgot password?</a>` : m === 'signup' ? '<span class="muted">Use any email and a password of 8 or more characters. We email you one link to confirm your address, then you can sign in.</span>' : `<a href="#" data-act="auth-mode" data-mode="signin">Back to sign in</a>`}</div>
   <p class="tiny muted">You stay signed in on this device until you sign out, or until it goes ${IDLE_DAYS} days without being used. Your data is private: only your account can read it.</p></aside>
   </div></div>`;
 };

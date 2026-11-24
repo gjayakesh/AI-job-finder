@@ -79,7 +79,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 /* Reduce motion: nothing slides or grows; colour and opacity changes stay, and the loading spinner still turns. */
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-property:color,background-color,border-color,opacity,box-shadow!important;transition-duration:.12s!important}
-  .spin{animation-duration:1.4s!important;animation-iteration-count:infinite!important}
+  .spin,.flow-steps li.now .flow-dot{animation-duration:1.4s!important;animation-iteration-count:infinite!important}
   .rv{opacity:1!important;transform:none!important}
 }
 
@@ -415,6 +415,48 @@ svg.chart .grid-l{stroke:var(--line);stroke-width:1}
   input[type=text],input[type=email],input[type=password],input[type=tel],input[type=url],input[type=number],input[type=date],input[type=time],input[type=datetime-local],input[type=search],select,textarea{font-size:16px;min-height:44px}
 }
 @media (max-width:520px){body{font-size:16px}.small{font-size:14px}.meta{font-size:14px}.top .seg{display:none}.top h1{font-size:18px}.theme-opts{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.g4{grid-template-columns:1fr}.toasts{left:16px;right:16px}.job-card{grid-template-columns:auto 1fr}.job-card > :last-child{grid-column:1/-1}.qa{grid-template-columns:1fr}.frow{grid-template-columns:100px 1fr 54px}}
+
+/* ---- First-visit guidance: start card, setup window, resume check, help, sign-in switch ---- */
+.eyebrow{font-size:12.5px;font-weight:600;color:var(--accent);letter-spacing:.02em}
+.hero-start{gap:18px;padding:24px 26px;border-color:color-mix(in srgb,var(--accent) 35%,var(--line))}
+.hero-start h2{font-size:clamp(22px,3vw,28px);line-height:1.15}
+.hero-start .prose{font-size:15.5px;line-height:1.55;margin:0}
+.drop.big{padding:36px 20px;gap:10px;border-color:color-mix(in srgb,var(--accent) 45%,var(--line));background:var(--accent-soft)}
+.drop.big svg{width:32px;height:32px;color:var(--accent)}
+.drop.big b{font-size:17px}
+.drop:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+.what-next{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.what-next li{display:flex;gap:12px;align-items:flex-start;line-height:1.5}
+.what-next li>b{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);font:600 13px var(--f-body)}
+.page-help{margin:0;color:var(--muted);font-size:14px;max-width:72ch;line-height:1.5}
+.tips{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.tip{display:flex;flex-direction:column;gap:6px;padding:14px 0;border-top:1px solid var(--line)}
+.tip:first-child{border-top:0;padding-top:2px}
+.tip p{margin:0;line-height:1.5}
+.tip .ex{margin:0;padding-left:18px;color:var(--muted)}
+.draft{margin:0;padding:10px 12px;border-left:3px solid var(--accent);background:var(--surface-2);border-radius:0 8px 8px 0;font-size:13.5px;line-height:1.5}
+.gloss{display:grid;gap:10px;margin:0}
+.gloss>div{display:grid;grid-template-columns:minmax(110px,170px) 1fr;gap:12px}
+.gloss dt{font-weight:600}
+.gloss dd{margin:0;color:var(--muted);line-height:1.5}
+.faq{border-top:1px solid var(--line);padding-top:10px}
+.faq:first-child{border-top:0;padding-top:0}
+.faq summary{cursor:pointer}
+.faq p{margin:6px 0 0}
+.flow{min-width:min(420px,92vw)}
+.flow-steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.flow-steps li{display:flex;gap:10px;align-items:center;color:var(--muted)}
+.flow-dot{width:18px;height:18px;border-radius:50%;border:2px solid var(--line);flex:none;display:grid;place-items:center;box-sizing:border-box}
+.flow-steps li.now{color:var(--ink);font-weight:600}
+.flow-steps li.now .flow-dot{border-color:var(--accent);border-top-color:transparent;animation:sp .8s linear infinite}
+.flow-steps li.done{color:var(--ink)}
+.flow-steps li.done .flow-dot{background:var(--good);border-color:var(--good)}
+.flow-steps li.done .flow-dot::after{content:"";width:4px;height:8px;border:solid var(--surface);border-width:0 2px 2px 0;transform:rotate(45deg) translate(-1px,-1px)}
+.flow-note{min-height:1.4em;margin:0}
+.auth-switch{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:4px}
+.auth-switch a{text-align:center;padding:10px 8px;border-radius:7px;text-decoration:none;color:var(--muted);font-weight:600;font-size:14px}
+.auth-switch a.on{background:var(--surface);color:var(--accent);box-shadow:var(--shadow)}
+@media (max-width:600px){.gloss>div{grid-template-columns:1fr;gap:2px}.hero-start{padding:18px}}
 </style>
 </head>
 <body>
@@ -2248,6 +2290,165 @@ async function checkJobOpen(j) {
   if (!res.complete) return res.items.some(x => String(x.extId) === String(j.externalId)) ? true : null;
   return res.items.some(x => String(x.extId) === String(j.externalId));
 }
+/* ============ Resume check and job-title suggestions ============
+   Plain rules that run in the browser: no AI key needed and nothing leaves the device.
+   They only read what the resume already says. They never invent experience or skills. */
+
+const FE_SKILLS = ['React', 'Angular', 'Vue.js', 'Next.js', 'Svelte', 'HTML', 'CSS', 'JavaScript', 'TypeScript', 'Tailwind CSS', 'Bootstrap', 'jQuery', 'Redux'];
+const BE_SKILLS = ['Node.js', 'Express.js', 'Django', 'Flask', 'FastAPI', 'Spring Boot', 'Laravel', '.NET', 'NestJS', 'Ruby on Rails', 'REST APIs', 'MySQL', 'PostgreSQL', 'MongoDB', 'Java', 'Python', 'PHP', 'SQL'];
+// [job title, skills that point to it, how many must be present, skills of which at least one must be present]
+const ROLE_RULES = [
+  ['Python Developer', ['Python', 'Django', 'Flask', 'FastAPI', 'Pandas', 'NumPy', 'PyTest', 'Celery'], 2, ['Python']],
+  ['Java Developer', ['Java', 'Spring Boot', 'Hibernate', 'Maven', 'JUnit', 'Gradle', 'Microservices'], 2, ['Java']],
+  ['.NET Developer', ['C#', '.NET', 'SQL Server', 'Azure'], 2, ['C#', '.NET']],
+  ['Frontend Developer', FE_SKILLS, 3, ['React', 'Angular', 'Vue.js', 'Next.js', 'Svelte', 'JavaScript', 'TypeScript']],
+  ['Backend Developer', BE_SKILLS, 3, ['Node.js', 'Express.js', 'Django', 'Flask', 'FastAPI', 'Spring Boot', 'Laravel', '.NET', 'NestJS', 'Ruby on Rails', 'REST APIs', 'Java', 'Python', 'PHP']],
+  ['Data Analyst', ['SQL', 'Excel', 'Power BI', 'Tableau', 'Pandas', 'Data Analysis', 'Data Visualization', 'Statistics', 'Looker', 'NumPy'], 2, ['SQL', 'Excel', 'Power BI', 'Tableau', 'Data Analysis']],
+  ['Machine Learning Engineer', ['Machine Learning', 'Deep Learning', 'scikit-learn', 'TensorFlow', 'PyTorch', 'Keras', 'NLP', 'Computer Vision', 'Hugging Face', 'MLOps'], 2, null],
+  ['Data Scientist', ['Machine Learning', 'Statistics', 'scikit-learn', 'Pandas', 'NumPy', 'Deep Learning', 'NLP', 'Data Analysis', 'A/B Testing'], 3, ['Machine Learning', 'Statistics']],
+  ['Data Engineer', ['ETL', 'Apache Spark', 'Airflow', 'Kafka', 'Hadoop', 'Snowflake', 'BigQuery', 'Redshift', 'dbt', 'Databricks'], 2, null],
+  ['DevOps Engineer', ['Docker', 'Kubernetes', 'Jenkins', 'CI/CD', 'Terraform', 'Ansible', 'GitHub Actions', 'Linux', 'AWS', 'Azure', 'GCP', 'Prometheus', 'Grafana', 'Helm', 'ArgoCD'], 3, null],
+  ['Mobile App Developer', ['Android', 'Kotlin', 'Flutter', 'React Native', 'Swift', 'iOS', 'SwiftUI', 'Dart'], 2, ['Android', 'Flutter', 'React Native', 'iOS', 'Kotlin', 'Swift']],
+  ['QA Engineer', ['Selenium', 'Cypress', 'Appium', 'Manual Testing', 'Automation Testing', 'TestNG', 'Playwright', 'PyTest', 'Postman', 'JUnit', 'Unit Testing'], 2, null],
+  ['UI/UX Designer', ['Figma', 'Photoshop', 'Accessibility', 'Responsive Design'], 1, ['Figma', 'Photoshop']],
+];
+const SOFTWARE_SKILLS = ['Data Structures & Algorithms', 'OOP', 'Java', 'Python', 'C++', 'C#', 'JavaScript', 'Go', 'System Design', 'Design Patterns', 'Microservices', 'TypeScript'];
+const ROLE_WORD = /\b(developer|engineer|analyst|designer|tester|scientist|architect|consultant|administrator|programmer)\b/i;
+
+/** Job titles that fit this profile, best first: roles you have held, then roles your skills point to. */
+function suggestTitles(p) {
+  p = p || {};
+  const have = new Set((p.skills || []).map(s => canonSkill(s).toLowerCase()));
+  const hit = names => names.filter(n => have.has(n.toLowerCase()));
+  const out = []; const seen = new Set();
+  const push = (title, why) => { const k = title.toLowerCase(); if (!seen.has(k)) { seen.add(k); out.push({ title, why }); } };
+  const pref = Array.isArray(p.preferredRoles) ? p.preferredRoles : String(p.preferredRoles || '').split(/[,;\n]/);
+  pref.map(s => String(s).trim()).filter(Boolean).forEach(t => push(t, 'You said you want this role'));
+  (p.experiences || []).forEach(e => {
+    const t = String(e.role || '').replace(/\b(intern(ship)?|trainee|junior|senior|jr\.?|sr\.?|associate)\b/ig, ' ').replace(/[-–|,()]+/g, ' ').replace(/\s+/g, ' ').trim();
+    if (t && t.length < 50 && ROLE_WORD.test(t)) push(t.replace(/\b([a-z])/g, m => m.toUpperCase()), `You worked as “${e.role}”`);
+  });
+  const fe = hit(FE_SKILLS), be = hit(BE_SKILLS);
+  if (fe.length >= 2 && be.length >= 3 && hit(['React', 'Angular', 'Vue.js', 'Next.js', 'Svelte']).length) push('Full Stack Developer', `Your skills cover both front end (${fe.slice(0, 3).join(', ')}) and back end (${be.slice(0, 3).join(', ')})`);
+  const scored = [];
+  for (const [title, skills, min, must] of ROLE_RULES) {
+    const h = hit(skills); if (h.length < min) continue; if (must && !hit(must).length) continue;
+    scored.push({ title, n: h.length, why: `Your resume lists ${h.slice(0, 4).join(', ')}` });
+  }
+  scored.sort((a, b) => b.n - a.n).forEach(s => push(s.title, s.why));
+  if (out.length < 3 && hit(SOFTWARE_SKILLS).length >= 2) push('Software Engineer', `Your resume lists ${hit(SOFTWARE_SKILLS).slice(0, 4).join(', ')}`);
+  return out.slice(0, 5);
+}
+
+/** Search settings made from the resume, so a first-time user never has to fill in a form. */
+function suggestPrefs(p) {
+  p = p || {}; const yrs = +p.totalYears || 0; const t = suggestTitles(p);
+  const city = p.location ? canonCity(p.location) : '';
+  const extra = String(p.preferredLocations || '').split(/[,;\n]/).map(s => canonCity(s.trim())).filter(Boolean);
+  return {
+    titles: t.slice(0, 3).map(x => x.title), skills: (p.skills || []).filter(s => skillCat(s) !== 'Soft skill').slice(0, 12),
+    locations: uniqCI([city, ...extra, 'Remote'].filter(Boolean)), workModes: [],
+    expMin: yrs < 1 ? 0 : Math.max(0, Math.round(yrs - 1)), expMax: yrs < 1 ? 2 : Math.round(yrs + 2),
+    salaryMin: null, salaryMax: null, currency: 'INR', period: 'year',
+    employmentTypes: ['full_time'], companyTypes: [], industries: [], other: '', raw: '', engine: 'resume', ambiguities: [],
+  };
+}
+
+/** A short, true summary built only from the profile, for resumes that have none. */
+function draftSummary(p) {
+  p = p || {}; const t = suggestTitles(p)[0]; const role = t ? t.title : '';
+  const skills = (p.skills || []).filter(s => skillCat(s) !== 'Soft skill').slice(0, 4);
+  if (!role && skills.length < 2) return '';
+  const yrs = Math.round(+p.totalYears || 0);
+  const head = yrs >= 1 ? `${role || 'Professional'} with ${yrs} year${yrs === 1 ? '' : 's'} of experience` : `Entry-level ${role || 'professional'}`;
+  const list = skills.length > 1 ? `${skills.slice(0, -1).join(', ')} and ${skills[skills.length - 1]}` : skills[0] || '';
+  const out = [`${head}${list ? ` skilled in ${list}` : ''}.`];
+  const pr = (p.projects || []).filter(x => x.name);
+  const ex = (p.experiences || []).find(e => e.role && e.employer);
+  if (pr.length) out.push(pr.length === 1 ? `Built a project: ${pr[0].name}.` : `Built ${pr.length} projects, including ${pr[0].name}.`);
+  else if (ex) out.push(`Worked as ${ex.role} at ${ex.employer}.`);
+  const ed = (p.education || [])[0];
+  if (yrs < 1 && ed && ed.degree) out.push(`Holds a ${ed.degree}${ed.institution ? ' from ' + ed.institution : ''}.`);
+  return out.join(' ');
+}
+
+const WEAK_START = /^(responsible for|worked on|worked with|helped( to)?|assisted( in| with)?|involved in|participated in|duties included|tasked with|was responsible)\b/i;
+const CLICHE = /seeking a (challenging|good|suitable|responsible)|to obtain a (position|job)|utili[sz]e my skills|dynamic organi[sz]ation|growth[- ]oriented|self[- ]motivated (and|team)/i;
+const PERSONAL = /\b(date of birth|d\.?o\.?b\.?|marital status|father'?s? name|mother'?s? name|nationality|religion|passport (no|number))\b/i;
+
+/**
+ * Checks a resume and says what to fix, in plain words. `items` are ordered most important first.
+ * `gaps` lists skills that several of your matched jobs ask for and your resume does not show.
+ */
+function resumeReview(text, p, jobs = []) {
+  const t = String(text || ''); p = p || {};
+  const lines = t.split(/\r?\n/).map(l => l.replace(/\s+/g, ' ').trim()).filter(Boolean);
+  const words = (t.match(/\S+/g) || []).length;
+  const sec = {}; let cur = 'top';
+  for (const l of lines) { const h = headingOf(l); if (h) { cur = h; sec[cur] = sec[cur] || []; continue; } (sec[cur] = sec[cur] || []).push(l); }
+  const items = []; const fix = (cost, id, title, why, how, extra = {}) => items.push({ level: 'fix', cost, id, title, why, how, ...extra });
+  const improve = (cost, id, title, why, how, extra = {}) => items.push({ level: 'improve', cost, id, title, why, how, ...extra });
+  const good = (id, title) => items.push({ level: 'good', cost: 0, id, title });
+  const techSkills = (p.skills || []).filter(s => skillCat(s) !== 'Soft skill');
+  const isTech = techSkills.filter(s => ['Language', 'Framework', 'Library', 'Database'].includes(skillCat(s))).length >= 2;
+  const fresher = !(+p.totalYears >= 1);
+
+  // Contact details
+  if (!p.email) fix(12, 'email', 'Add your email address', 'Employers cannot reach you without it.', 'Put your email at the very top of the resume.', { go: 'profile', goLabel: 'Add it in My details' });
+  else if (/\d{4,}|(cool|hot|sexy|boy|girl|king|queen|lover|dude|baby|star)/i.test(p.email.split('@')[0])) improve(4, 'email-pro', 'Use a professional email address', `“${p.email}” may look unprofessional to a recruiter.`, 'Create a simple one such as firstname.lastname@gmail.com and use it on your resume.');
+  else good('email', 'Your email address is there');
+  if (!p.phone) fix(10, 'phone', 'Add your phone number', 'Recruiters usually call before they email.', 'Add a number you answer, with the country code (+91).', { go: 'profile', goLabel: 'Add it in My details' });
+  else good('phone', 'Your phone number is there');
+  if (!p.linkedin) improve(4, 'linkedin', 'Add your LinkedIn link', 'Most recruiters look you up on LinkedIn before they call.', 'Copy your profile link (linkedin.com/in/your-name) into the contact line.', { go: 'profile', goLabel: 'Add it in My details' }); else good('linkedin', 'Your LinkedIn link is there');
+  if (isTech && !p.github) improve(4, 'github', 'Add your GitHub link', 'For tech jobs, recruiters want to see real code.', 'Add github.com/your-name, and pin your best 2–3 projects there.', { go: 'profile', goLabel: 'Add it in My details' }); else if (p.github) good('github', 'Your GitHub link is there');
+
+  // Summary
+  const sum = String(p.summary || '').trim(); const sumWords = (sum.match(/\S+/g) || []).length;
+  if (!sum) { const d = draftSummary(p); improve(6, 'summary', 'Add a 2-line summary at the top', 'It tells a recruiter who you are in five seconds.', d ? 'Here is a draft built only from facts in your resume. Read it and change anything that is not true.' : 'Write two lines: what you do, your best skills, and one thing you built or achieved.', d ? { fix: { act: 'apply-summary', label: 'Use this summary', text: d } } : {}); }
+  else if (CLICHE.test(sum)) improve(5, 'cliche', 'Replace the generic “objective” with facts', 'Phrases like “seeking a challenging position” say nothing about you.', 'Say what you can do instead: your role, top skills and one result. Keep it to 2–3 lines.', { go: 'profile', goLabel: 'Edit my summary' });
+  else if (sumWords > 90) improve(4, 'summary-long', 'Shorten your summary', `It is ${sumWords} words. Recruiters read only the first lines.`, 'Keep it to 2–3 lines (about 40–60 words).', { go: 'profile', goLabel: 'Edit my summary' });
+  else good('summary', 'You have a clear summary');
+
+  // Skills
+  if (techSkills.length < 5) improve(6, 'skills-few', 'List more of your skills', `Only ${techSkills.length} skill${techSkills.length === 1 ? ' was' : 's were'} found. Job filters search for skill words.`, 'Add a “Skills” section with the languages, tools and technologies you really know.', { go: 'profile', goLabel: 'Add skills' });
+  else if (techSkills.length > 28) improve(4, 'skills-many', 'Keep only your strongest skills', `${techSkills.length} skills looks like a keyword dump.`, 'Keep the 12–20 you could talk about in an interview.', { go: 'profile', goLabel: 'Edit skills' });
+  else good('skills', `${techSkills.length} skills found`);
+
+  // Experience, projects, education
+  const nExp = (p.experiences || []).length, nProj = (p.projects || []).length;
+  if (!nExp && !nProj) fix(14, 'nothing', 'Show what you have built or done', 'There are no projects or work experience on the resume.', 'Add 2–3 projects (even college ones) or any internship, with what you built and which tools you used.', { go: 'profile', goLabel: 'Add a project' });
+  else if (fresher && nProj < 2 && !nExp) improve(7, 'projects', 'Add one or two more projects', 'Without work experience, projects are your proof that you can do the job.', 'Add a project with 2–3 bullets: what it does, tools used, and how many people used it.', { go: 'profile', goLabel: 'Add a project' });
+  else good('work', 'You show projects or experience');
+  if (!(p.education || []).length) (fresher ? fix : improve)(fresher ? 10 : 5, 'education', 'Add your education', 'Degree, college and year are the first things recruiters check.', 'Add one line: degree, college, year of passing and CGPA or %.', { go: 'profile', goLabel: 'Add education' }); else good('education', 'Your education is listed');
+  if ((p.experiences || []).some(e => e.role && e.employer && !e.start)) improve(4, 'dates', 'Add dates to every job or internship', 'Roles without dates look incomplete.', 'Write the start and end month, for example “Jan 2026 – Jun 2026”.', { go: 'profile', goLabel: 'Add dates' });
+
+  // Bullet points: strong verbs and numbers
+  const desc = [...(sec.experience || []), ...(sec.projects || [])].map(l => ({ raw: l, clean: l.replace(BULLET_RE, '').trim() })).filter(x => x.clean.split(/\s+/).length >= 5 && (BULLET_RE.test(x.raw) || x.clean.length >= 45));
+  if (desc.length >= 2) {
+    const weak = desc.filter(x => WEAK_START.test(x.clean));
+    if (weak.length) improve(6, 'weak-verbs', 'Start each line with a strong action word', `${weak.length} line${weak.length === 1 ? ' starts' : 's start'} with a weak phrase such as “${weak[0].clean.split(/\s+/).slice(0, 3).join(' ')}”.`, 'Begin with what you did: Built, Designed, Led, Improved, Automated, Tested. Only use words that are true.', { examples: weak.slice(0, 3).map(x => x.clean.slice(0, 110)) }); else good('verbs', 'Your lines start with action words');
+    const withNum = desc.filter(x => /\d/.test(x.clean)).length;
+    if (withNum / desc.length < 0.25) improve(8, 'numbers', 'Add numbers to show the result', `Only ${withNum} of ${desc.length} lines contain a number.`, 'Add real figures: how many users, how much faster, how many records. “Built a placement portal” becomes “Built a placement portal used by 300 students”. Skip a number if you do not know it.', { examples: desc.filter(x => !/\d/.test(x.clean)).slice(0, 2).map(x => x.clean.slice(0, 110)) }); else good('numbers', 'Your lines include numbers');
+  } else if (nExp || nProj) improve(6, 'bullets', 'Describe each project or job in short bullet points', 'Long paragraphs are skipped by recruiters.', 'Use 2–3 bullets for each: what you built, which tools, and the result.', { go: 'profile', goLabel: 'Edit descriptions' });
+
+  // Length and things to remove
+  if (words < 150) improve(8, 'short', 'Your resume looks very short', `Only ${words} words were found.`, 'If the file is a scan or image, upload a text-based PDF or a DOCX. Otherwise add more detail to projects and experience.');
+  else if (words > (fresher ? 650 : 1000)) improve(6, 'long', 'Make your resume shorter', `It has about ${words} words.${fresher ? ' Freshers should fit on one page.' : ' Keep it to two pages at most.'}`, 'Cut old or minor items and keep what helps for the job you want.');
+  else good('length', 'The length is right');
+  if (PERSONAL.test(t)) improve(4, 'personal', 'Remove personal details you do not need', 'Date of birth, marital status or parents’ names are not needed and can lead to unfair judging.', 'Delete those lines. Keep only name, phone, email, city and links.');
+  if ((t.match(/\b(I am|I have|I was|I worked|my)\b/g) || []).length > 3) improve(3, 'first-person', 'Avoid “I” and “my”', 'Resumes read better without them.', 'Write “Built a login system” instead of “I built my login system”.');
+
+  // Skills the matched jobs ask for that the resume does not show
+  const mine = new Set((p.skills || []).map(s => canonSkill(s).toLowerCase())); const count = new Map(); let seen = 0;
+  for (const j of jobs) { if (!j.match || j.closed || j.expired) continue; seen++; for (const s of (j.match.missingRequired || [])) { const k = canonSkill(s); if (!mine.has(k.toLowerCase())) count.set(k, (count.get(k) || 0) + 1); } }
+  const gaps = [...count.entries()].filter(([, n]) => n >= (seen >= 4 ? 2 : 1)).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([skill, n]) => ({ skill, count: n, of: seen }));
+
+  const cost = items.reduce((a, x) => a + x.cost, 0);
+  const score = Math.max(20, Math.min(100, 100 - cost));
+  const order = { fix: 0, improve: 1, good: 2 };
+  items.sort((a, b) => order[a.level] - order[b.level] || b.cost - a.cost);
+  return { score, label: score >= 85 ? 'Strong' : score >= 70 ? 'Good' : score >= 50 ? 'Needs some work' : 'Needs a lot of work', items, gaps, words };
+}
 /* ============ Icons ============ */
 const IC = {
   dash: '<path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>',
@@ -2278,6 +2479,7 @@ const IC = {
   x: '<path d="M18 6L6 18M6 6l12 12"/>',
   refresh: '<path d="M21 12a9 9 0 1 1-2.6-6.4M21 4v5h-5"/>',
   upload: '<path d="M12 16V4M6 9l6-6 6 6M4 20h16"/>',
+  help: '<circle cx="12" cy="12" r="9"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 2.5-3 4.5M12 17.5h.01"/>',
 };
 const icon = (n, extra = '') => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ${extra}>${IC[n] || ''}</svg>`;
 
@@ -2285,13 +2487,27 @@ const icon = (n, extra = '') => `<svg viewBox="0 0 24 24" fill="none" stroke="cu
 // Six sections. Related pages are tabs inside a section; every page keeps its own address (#resumes, #tracker, ...), so older links still work.
 const SECTIONS = [
   ['dashboard', 'Home', 'dash', [['dashboard', 'Home']]],
-  ['jobs', 'Find jobs', 'search', [['jobs', 'Matches'], ['discover', 'Companies & import']]],
-  ['tracker', 'Applications', 'board', [['tracker', 'Tracker'], ['approvals', 'To approve'], ['interviews', 'Interviews'], ['offers', 'Offers']]],
-  ['resumes', 'My profile', 'user', [['resumes', 'Resume'], ['profile', 'Details'], ['preferences', 'Job preferences']]],
-  ['analytics', 'Insights', 'chart', [['analytics', 'Overview'], ['shortlisting', 'Shortlisted'], ['rejections', 'Rejected']]],
+  ['jobs', 'Find jobs', 'search', [['jobs', 'Jobs for you'], ['discover', 'Add more jobs']]],
+  ['tracker', 'Applications', 'board', [['tracker', 'My applications'], ['approvals', 'Waiting for my OK'], ['interviews', 'Interviews'], ['offers', 'Offers']]],
+  ['resumes', 'My profile', 'user', [['resumes', 'Resume'], ['resumecheck', 'Resume check'], ['profile', 'My details'], ['preferences', 'What job I want']]],
+  ['analytics', 'Progress', 'chart', [['analytics', 'Overview'], ['shortlisting', 'Shortlisted'], ['rejections', 'Rejected']]],
   ['config', 'Settings', 'gear', [['config', 'Account & AI'], ['alerts', 'Notifications'], ['activity', 'Activity log']]],
 ];
-const TITLES = { chat: 'Ask AI' };
+const TITLES = { chat: 'Ask AI', help: 'Help' };
+// One plain sentence under each page, so a first-time visitor knows what the page is for.
+const PAGE_HELP = {
+  jobs: 'Real jobs that are open right now. The number is how well each one fits your resume, out of 100. Click a job to see why.',
+  tracker: 'Every job you decide to apply for, and where it stands.',
+  approvals: 'Nothing is sent to an employer until you approve it here.',
+  interviews: 'Your upcoming interviews.',
+  offers: 'Job offers you have received, side by side.',
+  analytics: 'A summary of your job search so far.',
+  shortlisting: 'What the jobs you shortlisted have in common.',
+  rejections: 'What rejected applications have in common, and what to change.',
+  config: 'Your account and password, plus an optional free AI key.',
+  alerts: 'Get a message on your phone or email when new matching jobs appear.',
+  activity: 'A record of everything this site has done for you.',
+};
 SECTIONS.forEach(s => s[3].forEach(t => { TITLES[t[0]] = s[1]; }));
 const sectionOf = view => view === 'job' ? 'jobs' : (SECTIONS.find(s => s[3].some(t => t[0] === view)) || [])[0];
 function route() { const h = (location.hash || '').replace(/^#/, ''); const m = h.match(/^(job)-([a-z0-9]+)$/i); if (m) return { view: 'job', id: m[2] }; return { view: TITLES[h] ? h : 'dashboard', id: null }; }
@@ -2314,8 +2530,8 @@ function layout(view, title, body) {
   <div class="rail-foot">${foot}</div></aside>
   <div class="rail-shade" data-act="menu" aria-hidden="true"></div>
   <main class="main" id="main"><header class="top" id="top"><button class="icon-btn menu-btn" type="button" data-act="menu" aria-label="Open menu">${icon('menu')}</button><h1>${esc(title)}</h1><span class="sp"></span>
-  <a class="icon-btn" href="#chat" aria-label="Ask AI" title="Ask AI">${icon('chat')}</a>${themeSeg()}<button class="icon-btn" type="button" data-act="notifs" aria-label="Notifications${c.unread ? `, ${c.unread} unread` : ''}" aria-expanded="${S.ui.notifOpen ? 'true' : 'false'}">${icon('bell')}${c.unread ? `<span class="dot">${c.unread}</span>` : ''}</button>${S.ui.notifOpen ? notifPanel() : ''}<div class="scroll-prog" aria-hidden="true"><i id="scroll-prog"></i></div></header>
-  <div class="content" id="content" tabindex="-1">${banners()}${view === 'job' ? '<a class="back" href="#jobs">&larr; All jobs</a>' : pageTabs(view)}${body}</div><button class="to-top" type="button" data-act="to-top" id="to-top" aria-label="Back to top" hidden>${icon('arrowUp')}</button></main></div>`;
+  <a class="icon-btn" href="#help" aria-label="Help: how this site works" title="Help: how this site works">${icon('help')}</a><a class="icon-btn" href="#chat" aria-label="Ask AI" title="Ask AI">${icon('chat')}</a>${themeSeg()}<button class="icon-btn" type="button" data-act="notifs" aria-label="Notifications${c.unread ? `, ${c.unread} unread` : ''}" aria-expanded="${S.ui.notifOpen ? 'true' : 'false'}">${icon('bell')}${c.unread ? `<span class="dot">${c.unread}</span>` : ''}</button>${S.ui.notifOpen ? notifPanel() : ''}<div class="scroll-prog" aria-hidden="true"><i id="scroll-prog"></i></div></header>
+  <div class="content" id="content" tabindex="-1">${banners()}${view === 'job' ? '<a class="back" href="#jobs">&larr; All jobs</a>' : pageTabs(view)}${PAGE_HELP[view] ? `<p class="page-help">${PAGE_HELP[view]}</p>` : ''}${body}</div><button class="to-top" type="button" data-act="to-top" id="to-top" aria-label="Back to top" hidden>${icon('arrowUp')}</button></main></div>`;
 }
 const THEMES = [['light', 'Light', 'sun'], ['dark', 'Dark', 'moon'], ['auto', 'Auto', 'auto']];
 function themeSeg() { const cur = Theme.get(); return `<div class="seg" role="group" aria-label="Theme">${THEMES.map(([k, l, ic]) => `<button type="button" data-act="theme" data-theme="${k}" aria-pressed="${cur === k}" title="${k === 'auto' ? 'Auto: follow your device setting' : l + ' theme'}" aria-label="${l} theme">${icon(ic)}</button>`).join('')}</div>`; }
@@ -2369,17 +2585,34 @@ function searchCard() {
     ${!run && last && !(last.newIds || []).length ? `<p class="small">Nothing new this time.${Object.keys(S.jobs).length ? '' : ' Try broader titles or more cities in <a href="#preferences">Job preferences</a>, add companies, or import a posting you found elsewhere.'}</p>` : ''}
   </section>`;
 }
-function setupSteps() {
-  const hasProfile = !!(S.profile && (S.profile.name || (S.profile.skills || []).length));
-  const hasPrefs = !!(S.prefs && (S.prefs.titles || []).length);
-  const searched = !!(S.meta && S.meta.search) || Object.keys(S.jobs).length > 0;
-  const started = Object.values(S.jobs).some(j => !['Discovered', 'Analyzed', 'Archived'].includes(j.stage));
-  return [
-    { done: hasProfile, title: 'Add your resume', text: 'Upload a PDF or DOCX. Everything else is built from it.', cta: `<a class="btn sm ${hasProfile ? '' : 'primary'}" href="#resumes">${hasProfile ? 'Review' : icon('upload') + 'Upload resume'}</a>` },
-    { done: hasPrefs, title: 'Say what job you want', text: 'Job titles and cities, in your own words.', cta: `<a class="btn sm ${hasProfile && !hasPrefs ? 'primary' : ''}" href="#preferences">${hasPrefs ? 'Edit' : 'Set preferences'}</a>` },
-    { done: searched, title: 'Search open roles', text: `We check ${boardsFor(S.notify).length} company career pages and keep the roles that fit you.`, cta: `<button class="btn sm ${hasProfile && hasPrefs && !searched ? 'primary' : ''}" type="button" data-act="find-jobs" ${hasPrefs && !S.ui.searching ? '' : 'disabled'}>${icon('search')}${S.ui.searching ? 'Searching…' : 'Search now'}</button>` },
-    { done: started, title: 'Apply to your first match', text: 'Open a match and review the tailored resume. Nothing is sent until you approve it.', cta: `<a class="btn sm ${searched && !started ? 'primary' : ''}" href="#jobs">See matches</a>` },
-  ];
+const RESUME_ACCEPT = '.pdf,.docx,.txt,.md,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain';
+const resumeInput = `<input type="file" id="resume-file" class="sr-only" accept="${RESUME_ACCEPT}">`;
+const hasProfile = () => !!(S.profile && (S.profile.name || (S.profile.skills || []).length));
+const currentReview = () => { const r = latestResume(); return r && hasProfile() ? resumeReview(r.text, S.profile, Object.values(S.jobs)) : null; };
+/** The first thing a new visitor sees: one action, explained in plain words. */
+function startCard() {
+  return `<section class="card hero-start"><div class="stack" style="gap:6px"><span class="eyebrow">Welcome. This takes about a minute.</span><h2>Start here: upload your resume</h2><p class="prose">That is the only thing you need to do. We read it, choose the jobs that fit you, search for open positions, and tell you how to make your resume better.</p></div>
+  <label class="drop big" id="drop" for="resume-file">${icon('upload')}<b>Choose your resume file</b><span class="btn primary">Choose file</span><span class="muted small">PDF, Word (.docx) or text. You can also drag your file onto this box.</span>${resumeInput}</label>
+  <ol class="what-next"><li><b>1</b><span>We read your skills, projects and education.</span></li><li><b>2</b><span>We search real jobs that are open now and show how well you fit each one.</span></li><li><b>3</b><span>We show what to fix in your resume. Nothing is sent to any employer without your approval.</span></li></ol>
+  <details class="small"><summary class="muted" style="cursor:pointer">I don’t have a file. Let me paste my resume text instead</summary><form novalidate class="stack" data-form="paste-resume" style="margin-top:8px"><textarea name="text" id="paste-resume" aria-label="Resume text" rows="6" placeholder="Paste the full text of your resume here"></textarea><div class="row"><button class="btn primary" type="submit">Use this text</button></div></form></details>
+  <p class="tiny muted">Your resume is private to your account. <a href="#help">How does this site work?</a></p></section>`;
+}
+function youCard() {
+  const p = S.profile; const sk = (p.skills || []).filter(s => skillCat(s) !== 'Soft skill').slice(0, 10);
+  return `<section class="card you"><div class="card-h"><h2>${esc(p.name || 'Your profile')}</h2><span class="muted small">${esc([p.experienceLevel, p.location].filter(Boolean).join(' · '))}</span><span class="sp"></span><a class="btn sm" href="#profile">Check my details</a><label class="btn sm" for="resume-file">${icon('upload')}Upload a new resume</label>${resumeInput}</div>
+  ${sk.length ? `<div class="stack" style="gap:4px"><span class="small muted">Skills we found in your resume</span>${chipList(sk)}</div>` : ''}<p class="tiny muted">Something wrong? <a href="#profile">Fix it in My details</a>. Jobs are matched using this.</p></section>`;
+}
+/** Shown when a profile exists but no job titles are chosen yet. */
+function suggestCard() {
+  const t = suggestTitles(S.profile);
+  return `<section class="card"><div class="card-h"><h2>What job should we look for?</h2></div>${t.length ? `<p class="small muted prose">From your resume, these roles fit you. You can change them any time.</p><div class="stack">${t.slice(0, 4).map(x => `<div class="row small"><span class="chip acc">${esc(x.title)}</span><span class="muted">${esc(x.why)}</span></div>`).join('')}</div><div class="row"><button class="btn primary" type="button" data-act="use-suggested">${icon('search')}Use these and search for jobs</button><a class="btn" href="#preferences">I want something else</a></div>` : `<p class="small muted prose">We could not tell which role fits from the resume. Tell us in your own words, for example “Python developer in Hyderabad”.</p><div class="row"><a class="btn primary" href="#preferences">Tell us the job I want</a></div>`}</section>`;
+}
+const reviewTone = n => n >= 85 ? 'good' : n >= 60 ? 'warn' : 'bad';
+function tipsCard() {
+  const rv = currentReview(); if (!rv) return '';
+  const todo = rv.items.filter(x => x.level !== 'good');
+  return `<section class="card"><div class="card-h"><h2>Make your resume stronger</h2><span class="pill ${reviewTone(rv.score)}">${rv.score}/100 · ${esc(rv.label)}</span><span class="sp"></span><a class="btn sm" href="#resumecheck">${todo.length ? `See all ${todo.length} tip${todo.length === 1 ? '' : 's'}` : 'Open resume check'}</a></div>
+  ${todo.length ? `<ul class="list">${todo.slice(0, 3).map(x => `<li><span class="pill ${x.level === 'fix' ? 'bad' : 'warn'}">${x.level === 'fix' ? 'Fix first' : 'Improve'}</span><span><b>${esc(x.title)}.</b> ${esc(x.why)}</span></li>`).join('')}</ul>` : '<p class="small">Nothing to fix. Your resume covers what recruiters look for.</p>'}</section>`;
 }
 function hbars(items, { unit = '', max } = {}) {
   const mx = max || Math.max(1, ...items.map(i => i.value));
@@ -2397,9 +2630,9 @@ function vbars(data, { h = 160, color = 'var(--accent)', fmt = v => v } = {}) {
 /* ============ Views ============ */
 const V = {};
 V.dashboard = () => {
+  if (!hasProfile()) return startCard();
   const A = analytics(); const J = Object.values(S.jobs);
   const tiles = [['Jobs found', 'Total jobs found', A.total, 'jobs'], ['Strong matches', 'Jobs scoring 70 or more', A.matching, 'jobs'], ['Applied', 'Applications submitted', A.applied, 'tracker'], ['Interviews', 'Interviews scheduled', A.interviews, 'interviews']];
-  const steps = setupSteps(); const setupDone = steps.slice(0, 3).every(x => x.done);
   const awaiting = J.filter(j => j.stage === 'AwaitingApproval' || j.stage === 'Approved');
   const upcoming = J.flatMap(j => ((j.app && j.app.interviews) || []).filter(iv => new Date(iv.at) > Date.now() - 3600e3).map(iv => ({ j, iv }))).sort((a, b) => a.iv.at.localeCompare(b.iv.at)).slice(0, 4);
   const top = J.filter(j => j.match && ['Analyzed', 'Shortlisted', 'ResumeGenerated'].includes(j.stage) && !isClosed(j)).sort((a, b) => b.match.score - a.match.score).slice(0, 5);
@@ -2407,13 +2640,13 @@ V.dashboard = () => {
   awaiting.forEach(j => attention.push(`<li>${j.closed ? '<span class="pill bad">Closed</span>' : stagePill(j.stage)}<span><a href="#job-${j.id}">${esc(j.title)} · ${esc(j.company)}</a> — ${j.closed ? 'the employer has taken this role down' : j.stage === 'Approved' ? 'approved, ready to submit' : 'review and approve before anything is sent'}</span></li>`));
   J.filter(j => j.closed && ['Shortlisted', 'ResumeGenerated'].includes(j.stage)).forEach(j => attention.push(`<li><span class="pill bad">Closed</span><span><a href="#job-${j.id}">${esc(j.title)} · ${esc(j.company)}</a> — no longer listed; archive it or check the posting</span></li>`));
   upcoming.forEach(({ j, iv }) => attention.push(`<li><span class="pill good">Interview</span><span>${esc(fmtDT(iv.at))} · <a href="#job-${j.id}">${esc(j.company)}</a> (${esc(iv.type || 'Interview')}). <a href="#interviews">Prepare</a></span></li>`));
-  const run = S.ui.searching;
-  const setup = setupDone ? '' : `<section class="card setup"><div class="card-h"><h2>Get started in 4 steps</h2><p>${steps.filter(x => x.done).length} of ${steps.length} done</p></div>
-  <ol class="steps">${steps.map((x, i) => `<li class="step ${x.done ? 'done' : ''}${!x.done && steps.slice(0, i).every(y => y.done) ? ' next' : ''}"><span class="step-n" aria-hidden="true">${x.done ? icon('check') : i + 1}</span><div class="stack" style="gap:2px;flex:1;min-width:0"><b>${x.title}${x.done ? ' <span class="sr-only">(done)</span>' : ''}</b><span class="small muted">${x.text}</span></div>${x.cta}</li>`).join('')}</ol></section>`;
-  return `${setup}${setupDone ? searchCard() : (run ? `<section class="card">${searchStatus()}</section>` : '')}
+  const run = S.ui.searching; const hasPrefs = !!(S.prefs && (S.prefs.titles || []).length);
+  return `${youCard()}
+  ${hasPrefs ? searchCard() : (run ? `<section class="card">${searchStatus()}</section>` : suggestCard())}
   ${A.total ? `<div class="stats">${tiles.map(([l, full, v, h]) => `<a class="stat" href="#${h}" aria-label="${esc(full)}: ${v}"><b class="num" data-count="${v}">${v}</b><span>${esc(l)}</span></a>`).join('')}</div>` : ''}
-  ${attention.length ? `<section class="card"><div class="card-h"><h2>Needs your attention</h2><span class="sp"></span><a class="btn sm" href="#approvals">To approve</a></div><ul class="list">${attention.join('')}</ul></section>` : ''}
-  ${A.total ? `<section class="card"><div class="card-h"><h2>Best matches</h2><span class="sp"></span><a class="btn sm" href="#jobs">All jobs</a></div>${top.length ? `<div class="stack">${top.map(jobCard).join('')}</div>` : emptyState('No open matches right now', 'Search again, or widen the titles and cities in your preferences.')}</section>` : ''}`;
+  ${attention.length ? `<section class="card"><div class="card-h"><h2>Needs your attention</h2><span class="sp"></span><a class="btn sm" href="#approvals">Waiting for my OK</a></div><ul class="list">${attention.join('')}</ul></section>` : ''}
+  ${A.total ? `<section class="card"><div class="card-h"><h2>Best matches</h2><span class="sp"></span><a class="btn sm" href="#jobs">All jobs</a></div>${top.length ? `<div class="stack">${top.map(jobCard).join('')}</div>` : emptyState('No open matches right now', 'Search again, or widen the titles and cities in your preferences.')}</section>` : ''}
+  ${tipsCard()}`;
 };
 
 V.chat = () => {
@@ -2454,18 +2687,60 @@ V.profile = () => {
 V.resumes = () => {
   const R = Object.values(S.resumes).sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt));
   const Vs = Object.values(S.versions).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-  return `<div class="card"><div class="card-h"><h2>Upload your resume</h2><p>PDF, DOCX or TXT. You review the profile it builds before anything is saved.</p></div>
-  <label class="drop" id="drop" for="resume-file"><b>Drop your resume here or choose a file</b><span class="muted small">Your original text is stored once and never changed.</span><input type="file" id="resume-file" accept=".pdf,.docx,.txt,.md,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" style="display:none"></label>
+  return `<div class="card"><div class="card-h"><h2>Upload your resume</h2><p>PDF, Word or text. We read it and set everything up for you.</p></div>
+  <label class="drop" id="drop" for="resume-file"><b>Drop your resume here or choose a file</b><span class="muted small">Your original text is stored once and never changed. Uploading again lets you choose whether to add to or replace your profile.</span>${resumeInput}</label>
   <details><summary class="small muted" style="cursor:pointer">Or paste resume text</summary><form novalidate class="stack" data-form="paste-resume" style="margin-top:8px"><textarea name="text" id="paste-resume" aria-label="Resume text" rows="6" placeholder="Paste the full text of your resume"></textarea><div class="row"><button class="btn" type="submit">Read pasted text</button></div></form></details></div>
   <div class="card"><div class="card-h"><h2>Your uploaded resumes</h2></div>${R.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>File</th><th>Uploaded</th><th>Type</th><th class="r">Characters</th><th></th></tr></thead><tbody>${R.map(r => `<tr><td>${esc(r.filename)}</td><td>${fmtDT(r.uploadedAt)}</td><td>${esc(r.kind.toUpperCase())}</td><td class="r num">${r.text.length.toLocaleString('en-IN')}</td><td class="r"><button class="btn sm" type="button" data-act="view-original" data-id="${r.id}">View text</button> <button class="btn sm" type="button" data-act="reparse" data-id="${r.id}">Re-extract profile</button></td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">No resume uploaded yet.</p>'}</div>
   <div class="card"><div class="card-h"><h2>Tailored resumes</h2><p>One per job. Older versions stay available.</p></div>${Vs.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Job</th><th>Version</th><th class="r">ATS coverage</th><th>Engine</th><th>Created</th><th></th></tr></thead><tbody>${Vs.map(v => { const j = S.jobs[v.jobId]; return `<tr><td>${j ? `<a href="#job-${j.id}">${esc(j.title)} · ${esc(j.company)}</a>` : '<span class="muted">Deleted job</span>'}</td><td class="num">v${v.version}</td><td class="r num">${v.coverage}%</td><td>${engineTag(v.engine)}</td><td>${fmtDT(v.createdAt)}</td><td class="r" style="white-space:nowrap"><button class="btn sm" type="button" data-act="preview-version" data-id="${v.id}">Preview</button> <button class="btn sm" type="button" data-act="compare-version" data-id="${v.id}">Compare</button> <button class="btn sm" type="button" data-act="dl-pdf" data-id="${v.id}">PDF</button> <button class="btn sm" type="button" data-act="dl-docx" data-id="${v.id}">DOCX</button></td></tr>`; }).join('')}</tbody></table></div>` : '<p class="muted">Generate a tailored resume from any job page.</p>'}</div>`;
+};
+
+const tipItem = x => `<li class="tip ${x.level}"><div class="row"><span class="pill ${x.level === 'fix' ? 'bad' : 'warn'}">${x.level === 'fix' ? 'Fix first' : 'Improve'}</span><b>${esc(x.title)}</b></div><p class="small">${esc(x.why)}</p><p class="small"><b>How:</b> ${esc(x.how)}</p>${x.examples && x.examples.length ? `<ul class="small ex">${x.examples.map(e => `<li>“${esc(e)}”</li>`).join('')}</ul>` : ''}${x.fix && x.fix.text ? `<blockquote class="draft">${esc(x.fix.text)}</blockquote>` : ''}${x.fix || x.go ? `<div class="row">${x.fix ? `<button class="btn sm primary" type="button" data-act="${x.fix.act}" data-text="${esc(x.fix.text)}">${esc(x.fix.label)}</button>` : ''}${x.go ? `<a class="btn sm" href="#${x.go}">${esc(x.goLabel || 'Open')}</a>` : ''}</div>` : ''}</li>`;
+V.resumecheck = () => {
+  const rv = currentReview();
+  if (!rv) return `<div class="card">${emptyState('No resume to check yet', 'Upload your resume and we will tell you what to improve, in plain words.', '<a class="btn primary" href="#resumes">Upload my resume</a>')}</div>`;
+  const todo = rv.items.filter(x => x.level !== 'good'), ok = rv.items.filter(x => x.level === 'good');
+  const col = { good: 'var(--good)', warn: 'var(--warn)', bad: 'var(--bad)' }[reviewTone(rv.score)];
+  return `<div class="card"><div class="row" style="gap:16px;align-items:flex-start"><div class="score lg" style="--v:${rv.score};--c:${col}" data-v="${rv.score}" role="img" aria-label="Resume score ${rv.score} out of 100"></div>
+  <div class="stack" style="gap:6px;flex:1;min-width:220px"><h2>Your resume: ${esc(rv.label)}</h2><p class="small muted prose">${todo.length ? `We found ${todo.length} thing${todo.length === 1 ? '' : 's'} to improve. Start at the top: the first ones help the most.` : 'Nothing to fix. Nice work.'} This check only reads your resume. We never add skills or experience you did not write.</p></div>
+  <div class="stack" style="gap:6px"><button class="btn" type="button" data-act="dl-my-pdf">${icon('dl')}Download clean copy (PDF)</button><button class="btn" type="button" data-act="dl-my-docx">${icon('dl')}Download clean copy (Word)</button></div></div>
+  <p class="tiny muted">The clean copy is built from <a href="#profile">My details</a>, so fix details there first. To change the original file, edit it in Word or Google Docs and upload it again on the <a href="#resumes">Resume</a> tab.</p></div>
+  ${todo.length ? `<div class="card"><div class="card-h"><h2>What to improve</h2></div><ol class="tips">${todo.map(tipItem).join('')}</ol></div>` : ''}
+  ${rv.gaps.length ? `<div class="card"><h2>Skills your matching jobs ask for</h2><p class="small muted prose">These appear in jobs we found for you but not on your resume. If you really have a skill, add it. If you do not, treat it as something to learn. Only add what is true.</p><div class="chips">${rv.gaps.map(g => `<span class="chip pref">${esc(g.skill)} <span class="tiny">${g.count} of ${g.of} jobs</span></span>`).join('')}</div><div class="row"><a class="btn sm" href="#profile">Add skills in My details</a></div></div>` : ''}
+  <div class="card"><h2>Next: tailor it for a job</h2><p class="small muted prose">Open any job in <a href="#jobs">Jobs for you</a> and press “Prepare application”. We rewrite your resume to highlight what that job asks for, using only facts from your profile. You approve it before anything is sent.</p></div>
+  ${ok.length ? `<details class="card more"><summary><b>What is already good (${ok.length})</b></summary><ul class="list small" style="margin-top:8px">${ok.map(x => `<li><span class="pill good nodot">✓</span><span>${esc(x.title)}</span></li>`).join('')}</ul></details>` : ''}`;
+};
+
+V.help = () => {
+  const faq = [
+    ['Is anything sent to employers automatically?', 'No. We prepare everything, then wait. Nothing is sent until you approve it, and you finish by pressing submit on the employer’s own application page.'],
+    ['Who can see my resume?', 'Only you. It is saved in your private account. Other people with an account cannot read your data.'],
+    ['Where do the jobs come from?', 'From the career pages that companies publish themselves (Greenhouse, Lever, Ashby and SmartRecruiters) and from remote job feeds. Only roles that are open right now are shown. LinkedIn and Naukri do not allow automatic search, so paste a job from there under “Add more jobs”.'],
+    ['I see few or no jobs. Why?', 'We search a set list of companies. Try a wider job title or more cities under “What job I want”, or add more companies under “Add more jobs”.'],
+    ['What does the number on a job mean?', 'How well your resume fits that job, out of 100. 70 or more is a strong fit. Open the job to see the reasons: skills, experience, location and pay.'],
+    ['My resume is a scan or photo. What now?', 'We can only read text. Upload a Word or text-based PDF file, or paste the text of your resume on the Home page.'],
+    ['Do I need an AI key?', 'No. Everything works without one. A free Gemini key (Settings) only adds optional AI-written wording.'],
+    ['Can I use this on my phone?', 'Yes. Open the site in your phone browser and choose “Add to Home screen”.'],
+  ];
+  const words = [
+    ['Match score', 'A number from 0 to 100 showing how well your resume fits a job.'],
+    ['Tailored resume', 'A copy of your resume that highlights what one particular job asks for. It uses only facts from your profile.'],
+    ['ATS', 'Software that employers use to filter resumes by keywords. “ATS coverage” is the share of a job’s keywords your resume contains.'],
+    ['Approve', 'Your “yes, this looks right”. Nothing leaves this site without it.'],
+    ['LPA', 'Lakhs per annum, the yearly salary. 6 LPA means ₹6,00,000 a year.'],
+    ['Career page', 'A company’s own web page listing the jobs it has open.'],
+    ['Fresher', 'Someone with less than a year of full-time work experience.'],
+  ];
+  return `<div class="card"><h2>How this site works</h2><ol class="what-next"><li><b>1</b><span><b>Upload your resume</b> on the Home page. We read it and set up your profile for you.</span></li><li><b>2</b><span><b>See jobs for you.</b> Open <a href="#jobs">Find jobs</a>. Each job has a score and the reasons behind it.</span></li><li><b>3</b><span><b>Improve your resume.</b> <a href="#resumecheck">Resume check</a> lists what to fix, in plain words.</span></li><li><b>4</b><span><b>Apply when you are ready.</b> Open a job and press “Prepare application”. You review it, approve it, then submit on the employer’s page.</span></li></ol><div class="row"><a class="btn primary" href="#dashboard">Go to Home</a></div></div>
+  <div class="card"><h2>Common questions</h2><div class="stack">${faq.map(([q, a]) => `<details class="faq"><summary><b>${esc(q)}</b></summary><p class="small prose">${esc(a)}</p></details>`).join('')}</div></div>
+  <div class="card"><h2>Words used on this site</h2><dl class="gloss">${words.map(([w, d]) => `<div><dt>${esc(w)}</dt><dd>${esc(d)}</dd></div>`).join('')}</dl></div>`;
 };
 
 V.preferences = () => {
   const p = S.ui.prefDraft || S.prefs || { titles: [], skills: [], locations: [], workModes: [], employmentTypes: ['full_time'], companyTypes: [], industries: [] };
   const amb = (p.ambiguities && p.ambiguities.length ? p.ambiguities : prefAmbiguities(p));
   const isDraft = !!S.ui.prefDraft;
-  return `<div class="card"><div class="card-h"><h2>Describe the job you want</h2></div><p class="small muted">Write it the way you would say it. We turn it into search filters you can check before anything runs.</p>
+  const sug = hasProfile() ? suggestTitles(S.profile).filter(x => !(p.titles || []).some(t => t.toLowerCase() === x.title.toLowerCase())) : [];
+  return `${sug.length ? `<div class="card"><h2>Suggested from your resume</h2><p class="small muted">Click a job to add it to your search.</p><div class="row">${sug.map(x => `<button class="btn sm" type="button" data-act="add-title" data-title="${esc(x.title)}" title="${esc(x.why)}">+ ${esc(x.title)}</button>`).join('')}</div></div>` : ''}<div class="card"><div class="card-h"><h2>Describe the job you want</h2></div><p class="small muted">Write it the way you would say it. We turn it into search filters you can check before anything runs.</p>
   <form novalidate class="stack" data-form="prefs-nl"><label class="f"><span class="sr-only">Your request</span><textarea name="text" id="prefs-text" rows="3" placeholder="Entry-level Full Stack or Python Developer jobs in Hyderabad, Bengaluru or remote. I know Python, JavaScript, React and MySQL. Salary ₹4–7 LPA.">${esc(p.raw || '')}</textarea></label><div class="row"><button class="btn primary" type="submit">Create filters</button><span class="muted small">Uses ${AI.available() && S.settings.cloudPublic ? AI.name + ', with the local parser as fallback' : 'the built-in parser'}.</span></div></form></div>
   ${isDraft ? `<div class="banner info"><b>Check these filters.</b><span>They are not saved until you confirm.</span><span class="sp"></span><button class="btn sm" type="button" data-act="prefs-discard">Discard</button><button class="btn sm primary" type="button" data-act="prefs-confirm">Confirm and save</button></div>` : ''}
   ${amb.length ? `<div class="card"><h2>Please check</h2><ul class="list small">${amb.map(a => `<li><span class="pill warn">Check</span><span>${esc(a)}</span></li>`).join('')}</ul></div>` : ''}
@@ -2822,34 +3097,77 @@ async function importJobs(url, text) {
   return created;
 }
 
-/* ============ Resume upload & profile extraction ============ */
+/* ============ Resume upload and automatic setup ============
+   One upload does everything: read the file, build the profile, choose job titles, search, and check the resume.
+   If a profile already exists, nothing is overwritten without asking. */
+const Flow = {
+  el: null,
+  steps: [['read', 'Reading your resume'], ['profile', 'Finding your skills, projects and education'], ['titles', 'Choosing job titles that fit you'], ['search', 'Searching open jobs for you'], ['review', 'Checking your resume for improvements']],
+  open() {
+    if (this.el) return;
+    const el = document.createElement('div'); el.className = 'overlay-busy';
+    el.innerHTML = `<div class="box flow" role="dialog" aria-modal="true" aria-label="Setting things up for you"><h2>Setting things up for you</h2><p class="small muted">This takes about a minute. You don’t need to do anything.</p><ol class="flow-steps">${this.steps.map(([k, t]) => `<li data-k="${k}"><span class="flow-dot" aria-hidden="true"></span><span>${t}</span></li>`).join('')}</ol><p class="small muted flow-note" id="flow-note" role="status" aria-live="polite"></p></div>`;
+    document.body.appendChild(el); this.el = el;
+  },
+  step(k, note = '') {
+    if (!this.el) return; let before = true;
+    this.el.querySelectorAll('.flow-steps li').forEach(li => { if (li.dataset.k === k) { before = false; li.className = 'now'; } else li.className = before ? 'done' : ''; });
+    this.note(note);
+  },
+  note(t) { const n = this.el && this.el.querySelector('#flow-note'); if (n) n.textContent = t || ''; },
+  async finish() { if (!this.el) return; this.el.querySelectorAll('.flow-steps li').forEach(li => { li.className = 'done'; }); this.note('All done.'); await sleep(450); this.close(); },
+  close() { if (this.el) { this.el.remove(); this.el = null; } },
+};
 async function handleResumeFile(file) {
+  Flow.open(); Flow.step('read', file.name);
   let res;
-  try { res = await Busy.local(`Reading ${file.name}…`, () => extractFileText(file)); }
-  catch (e) { toast(e.message || 'Could not read that file.', 'bad'); return; }
+  try { res = await extractFileText(file); }
+  catch (e) { Flow.close(); toast(e.message || 'Could not read that file.', 'bad'); return; }
   await storeResume(file.name, res.kind, res.text, file.size);
 }
 async function storeResume(filename, kind, text, size) {
-  if (String(text).trim().length < 60) { toast('Almost no text was found. A scanned PDF has no text layer; paste the resume text instead.', 'bad'); return; }
+  if (String(text).trim().length < 60) { Flow.close(); toast('Almost no text was found. A scanned PDF or a photo has no text we can read. Upload a Word file, or paste the text of your resume instead.', 'bad'); return; }
+  Flow.open(); Flow.step('read', filename);
   const r = { id: uid('r'), filename, kind, uploadedAt: nowISO(), text: String(text).slice(0, 150000), sizeBytes: size || text.length, immutable: true };
   r.hash = await sha256(r.text); S.resumes[r.id] = r; save.resume(r);
   logAgent('Career Profile Agent', 'Stored original resume', `${filename} (${r.text.length} characters, sha256 ${r.hash.slice(0, 12)}…)`);
   await extractProfileFrom(r);
 }
 async function extractProfileFrom(r) {
+  Flow.open(); Flow.step('profile');
   const local = parseResumeLocal(r.text);
   let res;
   try {
     res = await AI.route({ personal: true, label: 'Extracting your career profile…', prompt: `Extract a structured career profile from this resume. Copy facts exactly; never guess or add anything that is not written. Use "" or [] when a field is absent. ${UNTRUSTED}\n<untrusted>${r.text.slice(0, 60000)}</untrusted>\nReply with only JSON matching: ${PROFILE_SCHEMA}`, validate: o => o && (o.name || (o.skills || []).length), local: async () => local });
-  } catch (e) { if (e && e.code === 'cancelled') res = { out: local, engine: 'local' }; else throw e; }
+  } catch (e) { if (e && e.code === 'cancelled') res = { out: local, engine: 'local' }; else { Flow.close(); throw e; } }
   const ex = normalizeProfile(res.engine === 'ai' ? res.out : local);
   logAgent('Career Profile Agent', 'Extracted profile', `${ex.skills.length} skills, ${ex.projects.length} projects, ${ex.experiences.length} roles, ${ex.education.length} education entries`, res.engine);
-  showProfileReview(ex, res.engine);
+  const has = S.profile && (S.profile.name || (S.profile.skills || []).length);
+  const empty = !(ex.name || ex.skills.length);
+  if (has || empty) { Flow.close(); showProfileReview(ex, res.engine, empty); return; }
+  commitProfile(ex, 'replace');
+  await finishSetup();
 }
+/** After the profile is saved: pick job titles if none are set, search, and land on the right page. */
+async function finishSetup() {
+  Flow.open(); Flow.step('titles');
+  const hadPrefs = !!(S.prefs && (S.prefs.titles || []).length); let made = false; let res = null;
+  if (!hadPrefs) {
+    const sug = suggestPrefs(S.profile);
+    if (sug.titles.length) { sug.savedAt = nowISO(); S.prefs = sug; save.prefs(); rescoreAll(); made = true; logAgent('Career Profile Agent', 'Chose job titles from your resume', sug.titles.join(', ')); }
+  }
+  if (made) { Flow.step('search'); res = await runLiveSearch({ quiet: true }); }
+  Flow.step('review'); await Flow.finish();
+  go(made || !hadPrefs ? 'dashboard' : 'resumecheck');
+  if (made) toast(res && res.fresh.length ? `Done! We found ${res.fresh.length} open job${res.fresh.length === 1 ? '' : 's'} for you.` : 'Your resume is ready. We could not find new jobs just now, so press “Search again” in a moment.');
+  else if (!hadPrefs) toast('We read your resume. Now tell us what job you want, and we will search.');
+  else toast('Profile updated. Here is how your resume looks now.');
+}
+
 let _pendingProfile = null;
-function showProfileReview(ex, engine) {
+function showProfileReview(ex, engine, empty = false) {
   _pendingProfile = ex; const has = S.profile && (S.profile.name || (S.profile.skills || []).length);
-  openModal(`<div class="row"><h2>Review the extracted profile</h2>${engineTag(engine)}</div><p class="small muted">Check this before it is saved. You can edit everything afterwards on the Career Profile page.</p>
+  openModal(`<div class="row"><h2>Review the extracted profile</h2>${engineTag(engine)}</div>${empty ? '<div class="banner bad"><span>We could not find a name or skills in this file. It may be a scan or a photo. You can still save it and type your details by hand, or go back and upload a Word file.</span></div>' : ''}<p class="small muted">${has ? 'You already have a profile. Choose whether to add this resume to it or replace it. Nothing changes until you choose.' : 'Check this before it is saved.'} You can edit everything afterwards in My details.</p>
   <div class="grid g2"><div class="stack small"><div><b>${esc(ex.name || 'Name not found')}</b></div><div>${esc([ex.email, ex.phone, ex.location].filter(Boolean).join(' · ') || 'No contact details found')}</div><div class="muted">${esc([ex.linkedin, ex.github, ex.portfolio].filter(Boolean).join(' · '))}</div><div>Level: ${esc(ex.experienceLevel)} · ${ex.totalYears} yrs full-time</div></div>
   <div class="stack small"><b>Skills (${ex.skills.length})</b>${chipList(ex.skills)}</div></div>
   <div class="grid g3 small"><div><b>Projects (${ex.projects.length})</b><ul style="margin:4px 0;padding-left:18px">${ex.projects.map(p => `<li>${esc(p.name)}${p.technologies ? ` <span class="muted">— ${esc(p.technologies)}</span>` : ''}</li>`).join('') || '<li class="muted">None found</li>'}</ul></div>
@@ -2857,8 +3175,8 @@ function showProfileReview(ex, engine) {
   <div><b>Education (${ex.education.length})</b><ul style="margin:4px 0;padding-left:18px">${ex.education.map(e => `<li>${esc(e.degree)}${e.institution ? ', ' + esc(e.institution) : ''} ${esc(e.year)}</li>`).join('') || '<li class="muted">None found</li>'}</ul></div></div>
   <div class="row" style="justify-content:flex-end"><button class="btn" type="button" data-act="dlg-no">Cancel</button>${has ? '<button class="btn" type="button" data-act="profile-apply" data-mode="merge">Merge into my profile</button>' : ''}<button class="btn primary" type="button" data-act="profile-apply" data-mode="replace">${has ? 'Replace profile details' : 'Save as my profile'}</button></div>`, { wide: true });
 }
-function applyExtracted(mode) {
-  const ex = _pendingProfile; if (!ex) return; const cur = S.profile || {};
+function commitProfile(ex, mode) {
+  const cur = S.profile || {};
   const keep = { workModes: cur.workModes, employmentTypes: cur.employmentTypes, relocate: cur.relocate, noticePeriod: cur.noticePeriod, currentCtc: cur.currentCtc, expectedMin: cur.expectedMin, expectedMax: cur.expectedMax, preferredRoles: cur.preferredRoles, preferredLocations: cur.preferredLocations, workAuth: cur.workAuth };
   let p;
   if (mode === 'merge' && cur.name !== undefined) {
@@ -2870,9 +3188,14 @@ function applyExtracted(mode) {
     p.certifications = uniqCI([...(p.certifications || []), ...ex.certifications]); p.achievements = uniqCI([...(p.achievements || []), ...ex.achievements]);
   } else p = { ...ex, ...Object.fromEntries(Object.entries(keep).filter(([, v]) => v !== undefined)) };
   p.workModes = p.workModes || []; p.employmentTypes = p.employmentTypes || ['full_time']; p.updatedAt = nowISO();
-  S.profile = p; save.profile(); _pendingProfile = null; closeModal();
+  S.profile = p; save.profile();
   rescoreAll(); logAgent('Career Profile Agent', mode === 'merge' ? 'Merged extracted profile' : 'Saved extracted profile', `${p.skills.length} skills`);
-  toast('Profile saved. Add notice period, salary and job targets to complete it.'); go('profile');
+  return p;
+}
+async function applyExtracted(mode) {
+  const ex = _pendingProfile; if (!ex) return;
+  commitProfile(ex, mode); _pendingProfile = null; closeModal();
+  await finishSetup();
 }
 function collectProfile(form) {
   const fd = new FormData(form); const base = clone(S.ui.draft || S.profile || normalizeProfile({}));
@@ -3000,6 +3323,7 @@ function paintSearchProgress() {
   if (bar) bar.style.transform = `scaleX(${run.total ? Math.max(0.02, run.done / run.total) : 0.02})`;
   if (label) label.textContent = searchLabel(run);
   if (count) count.textContent = run.total ? `${run.done}/${run.total}` : '';
+  if (Flow.el) Flow.note(run.total ? `${searchLabel(run)} (${run.done} of ${run.total})` : searchLabel(run));
 }
 /** Searches the live job boards from this browser, adds new matches and flags saved roles that have closed. */
 async function runLiveSearch({ quiet = false } = {}) {
@@ -3052,6 +3376,23 @@ ACT['dlg-no'] = () => closeModal(false);
 ACT.skip = () => { const c = $('#content'); if (c) c.focus(); };
 ACT['to-top'] = () => { const m = $('#main'); if (m) m.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); };
 ACT['find-jobs'] = async () => { const r = await runLiveSearch(); if (r && r.fresh.length && route().view === 'dashboard') go('jobs'); };
+ACT['use-suggested'] = async () => {
+  if (!S.profile) return; const sug = suggestPrefs(S.profile);
+  if (!sug.titles.length) { toast('We could not pick job titles from your resume. Type the job you want instead.', 'bad'); return go('preferences'); }
+  sug.savedAt = nowISO(); S.prefs = sug; save.prefs(); rescoreAll(); logAgent('Career Profile Agent', 'Chose job titles from your resume', sug.titles.join(', '));
+  const r = await runLiveSearch(); if (r && r.fresh.length) go('dashboard');
+};
+ACT['add-title'] = el => {
+  const t = el.dataset.title; const base = S.ui.prefDraft || S.prefs || suggestPrefs(S.profile || {}); const p = clone(base); p.titles = uniqCI([...(p.titles || []), t]);
+  if (S.ui.prefDraft) { S.ui.prefDraft = p; return render(); }
+  p.savedAt = nowISO(); S.prefs = p; save.prefs(); rescoreAll(); logAgent('Career Profile Agent', 'Added a job title', t); toast(`Added “${t}”. Press “Search now” to look for it.`); render();
+};
+ACT['apply-summary'] = el => {
+  if (!S.profile) return; S.profile.summary = el.dataset.text || ''; S.profile.updatedAt = nowISO(); save.profile();
+  logAgent('Career Profile Agent', 'Added a summary from your resume facts', S.profile.summary.slice(0, 160)); toast('Summary added. Your tailored resumes will use it.'); render();
+};
+ACT['dl-my-pdf'] = async () => { const p = S.profile; if (!p) return; try { const blob = await Busy.local('Building PDF…', () => resumePDF(profileAsTailored(p), p)); await offerDownload(`${slug(p.name || 'resume')}-resume.pdf`, blob); } catch (e) { toast('Could not build the PDF: ' + e.message, 'bad'); } };
+ACT['dl-my-docx'] = async () => { const p = S.profile; if (!p) return; try { const blob = await Busy.local('Building DOCX…', () => makeDocx(resumeDocxParas(profileAsTailored(p), p))); await offerDownload(`${slug(p.name || 'resume')}-resume.docx`, blob); } catch (e) { toast('Could not build the DOCX: ' + e.message, 'bad'); } };
 ACT['board-remove'] = el => {
   const n = S.notify || (S.notify = DEFAULT_NOTIFY()); const ats = el.dataset.ats, token = el.dataset.token; const key = boardKey({ ats, token });
   const mine = String(n.companies[ats] || '').split(/[\s,]+/).filter(Boolean);
@@ -3412,24 +3753,24 @@ V.auth = () => {
   const a = S.ui.auth; const m = a.mode;
   const field = (n, l, t, ac) => `<label class="f"><span>${l}</span><input type="${t}" name="${n}" id="auth-${n}" autocomplete="${ac}" ${n === 'email' ? `value="${esc(a.email || '')}"` : ''}></label>`;
   const story = [
-    ['Add your resume', 'Upload a PDF or DOCX. We build your profile from it, and the original file is never changed.'],
-    ['Find open jobs', `We check ${BOARD_DIRECTORY.length} company career pages and remote job feeds, and keep only roles that are open right now.`],
-    ['See why each one fits', 'Every job gets a 0–100 match score with the reasons: skills, experience, location and pay.'],
-    ['Apply when you approve', 'We tailor your resume for each job. Nothing is sent until you approve it.'],
+    ['Upload your resume', 'A PDF or Word file. We read it for you, so there is nothing to type.'],
+    ['We find jobs for you', `We pick the job titles that fit you and search ${BOARD_DIRECTORY.length} company career pages and remote job feeds. Only jobs that are open right now are kept.`],
+    ['See how well you fit', 'Every job gets a score out of 100 with simple reasons: skills, experience, city and pay.'],
+    ['Improve and apply', 'We show what to fix in your resume and tailor it for each job. Nothing is sent to an employer until you say yes.'],
   ];
   return `<div class="landing"><header class="landing-top"><div class="brand" style="padding:0"><div class="brand-mark">AC</div><div><b>${esc(CONFIG.APP_NAME)}</b><small>Job search, under your control</small></div></div>${themeSeg()}</header>
   <div class="landing-grid">
-  <section class="landing-story"><h1>Find jobs that fit your resume. Apply only when you approve.</h1>
-  <p class="lede">Free and private. It finds open roles, shows how well each one matches you, and prepares the application. Nothing is sent without you.</p>
+  <section class="landing-story"><h1>Upload your resume. We find jobs that fit it.</h1>
+  <p class="lede">Free and private. It takes about a minute. We find open jobs, show how well each one fits you, and tell you how to improve your resume. Nothing is sent to an employer without your approval.</p>
   <ol class="pipe" id="pipe">${story.map(([t, d], i) => `<li class="pipe-step"><span class="pipe-n" aria-hidden="true">${i + 1}</span><div><h2>${t}</h2><p>${d}</p></div></li>`).join('')}</ol></section>
-  <aside class="auth-card" aria-label="Your account"><h2 class="auth-title">${AUTH_TITLES[m]}</h2>
+  <aside class="auth-card" aria-label="Your account">${['signin', 'signup'].includes(m) ? `<div class="auth-switch" role="group" aria-label="Sign in or create an account"><a href="#" data-act="auth-mode" data-mode="signin" class="${m === 'signin' ? 'on' : ''}" ${m === 'signin' ? 'aria-current="true"' : ''}>I have an account</a><a href="#" data-act="auth-mode" data-mode="signup" class="${m === 'signup' ? 'on' : ''}" ${m === 'signup' ? 'aria-current="true"' : ''}>I’m new here</a></div>` : ''}<h2 class="auth-title">${AUTH_TITLES[m]}</h2>
   ${a.err ? `<div class="banner bad" role="alert"><span>${esc(a.err)}</span></div>` : ''}${a.msg ? `<div class="banner info" role="status"><span>${esc(a.msg)}</span></div>` : ''}
   <form novalidate class="stack" data-form="auth" data-mode="${m}">
     ${m !== 'newpass' ? field('email', 'Email', 'email', 'email') : ''}
     ${['signin', 'signup', 'newpass'].includes(m) ? field('password', m === 'signin' ? 'Password' : 'Password (8+ characters)', 'password', m === 'signin' ? 'current-password' : 'new-password') : ''}
     <button class="btn primary" type="submit" style="justify-content:center">${{ signin: 'Sign in', signup: 'Create account', magic: 'Send link', reset: 'Send reset link', newpass: 'Save password' }[m]}</button>
   </form>
-  <div class="stack small">${m === 'signin' ? `<a href="#" data-act="auth-mode" data-mode="signup">New here? Create an account</a><a href="#" data-act="auth-mode" data-mode="magic">Sign in with an email link instead</a><a href="#" data-act="auth-mode" data-mode="reset">Forgot password?</a>` : `<a href="#" data-act="auth-mode" data-mode="signin">Back to sign in</a>`}</div>
+  <div class="stack small">${m === 'signin' ? `<a href="#" data-act="auth-mode" data-mode="magic">Sign in with an email link instead</a><a href="#" data-act="auth-mode" data-mode="reset">Forgot password?</a>` : m === 'signup' ? '<span class="muted">Use any email and a password of 8 or more characters. We email you one link to confirm your address, then you can sign in.</span>' : `<a href="#" data-act="auth-mode" data-mode="signin">Back to sign in</a>`}</div>
   <p class="tiny muted">You stay signed in on this device until you sign out, or until it goes ${IDLE_DAYS} days without being used. Your data is private: only your account can read it.</p></aside>
   </div></div>`;
 };

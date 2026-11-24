@@ -23,14 +23,24 @@ Six sections in the left menu; related pages are tabs inside each one.
 
 | Section | What's in it |
 |---|---|
-| **Home** | The 4-step checklist for new users, then your search button and best matches. |
-| **Find jobs** | **Matches** (search, filter, every job with its score) and **Companies & import** (the career pages searched, remote feeds, import a posting from another site). |
-| **Applications** | **Tracker**, **To approve**, **Interviews**, **Offers**. |
-| **My profile** | **Resume** (upload), **Details** (your profile), **Job preferences**. |
-| **Insights** | **Overview** numbers and charts, plus what shortlists and rejections teach you. |
+| **Home** | A first-time visitor sees one box: **upload your resume**. After that, Home shows what we found in the resume, your search button, the best matches, and the top resume tips. |
+| **Find jobs** | **Jobs for you** (search, filter, every job with its score) and **Add more jobs** (the career pages searched, remote feeds, import a posting from another site). |
+| **Applications** | **My applications**, **Waiting for my OK**, **Interviews**, **Offers**. |
+| **My profile** | **Resume** (upload), **Resume check** (what to improve), **My details** (your profile), **What job I want**. |
+| **Progress** | **Overview** numbers and charts, plus what shortlists and rejections teach you. |
 | **Settings** | **Account & AI** (password, optional Gemini key, export or delete data), **Notifications**, **Activity log**. |
 
+**Help** (the ? in the top bar) explains how the site works in plain words, answers common questions and defines the jargon. Every page also has a one-line note saying what it is for.
+
 **Ask AI** (chat bubble in the top bar) takes plain-language commands such as "search now". Older page addresses such as `#approvals` or `#config` still open the right tab.
+
+### What happens when you upload a resume
+
+1. The file is read in your browser (PDF, DOCX or TXT; scans and photos have no text, so paste the text instead). The original text is stored once and never changed.
+2. The profile (contact details, skills, projects, experience, education) is extracted and saved automatically. If you already have a profile, a second upload asks whether to **add to** or **replace** it, so nothing is overwritten silently.
+3. Job titles, your city and an experience range are chosen from the resume (`suggestTitles` / `suggestPrefs` in `src/02b-guide.js`). They appear on **What job I want**, where you can change or add to them.
+4. The live job search runs once, so Home already shows matches.
+5. **Resume check** lists what to improve: missing contact details, a generic objective, weak verbs, lines without numbers, personal details that should be removed, length, and skills that several of your matched jobs ask for but your resume does not show. It runs entirely in the browser, needs no AI key, and only reads what the resume says; it never invents skills or experience. A missing summary gets a draft built only from your own profile facts, and a clean PDF or Word copy can be downloaded from your saved profile.
 
 Setup takes about 30–40 minutes. Do the steps in order.
 
@@ -69,7 +79,7 @@ If you ever create a new project, paste `supabase/schema.sql` into **SQL Editor 
 
 1. Open your site → **Create an account** with your email and a password.
 2. Open the confirmation email from Supabase and click the link, then sign in.
-3. Follow the **Get started in 4 steps** checklist on **Home**: add your resume (PDF/DOCX), say what job you want, then press **Search now**.
+3. On **Home**, upload your resume (PDF, Word or text). That is the only step: the site reads it, builds your profile, chooses job titles and a city from it, searches open jobs and checks the resume for improvements. Change the job titles any time under **My profile → What job I want**.
 4. Recommended for a personal site: Supabase → **Authentication → Sign In / Providers** → turn off **Allow new users to sign up**, so nobody else can create an account on your site.
 
 > Supabase's built-in email sender is rate-limited (a few emails per hour). That's fine for one person.
@@ -123,10 +133,10 @@ Then: repo → **Actions** → enable workflows if asked → **Career agent** �
 2. The **Alert server** card should say **Running** with the time of the last run.
 3. Tick **Email** and check the address. Tick **Telegram** → **Connect Telegram** → tap **Start** in the bot. The next run links your chat and the bot replies "Connected". Click **Enable on this device** for push.
 4. Choose what to be alerted about, your minimum match score for new jobs, and your daily digest time.
-5. Under **Scheduled job search**, choose which sources the server repeats every 6 hours. The companies it searches are the ones on **Find jobs → Companies & import**.
+5. Under **Scheduled job search**, choose which sources the server repeats every 6 hours. The companies it searches are the ones on **Find jobs → Add more jobs**.
 6. Click **Save notification settings**, then **Send a test alert**. It arrives on the next run, or immediately if you click **Run workflow** again.
 
-Also fill in **My profile → Job preferences** (titles, cities, salary). Every search uses those.
+Also fill in **My profile → What job I want** (titles, cities, salary). Every search uses those.
 
 ## Finding jobs that are open to apply
 
@@ -139,7 +149,7 @@ Also fill in **My profile → Job preferences** (titles, cities, salary). Every 
 - **Other sites.** LinkedIn, Naukri, Indeed and similar sites don't allow automated access. Use the ready-made search links, then **Import a job** by pasting the posting.
 - **More coverage.** Adzuna's India-wide search runs only in the scheduled server job (step 7), because it needs a private key.
 
-Applying is always yours to approve: **Prepare application** builds the tailored resume and the answers, the **To approve** tab (under Applications) locks the exact version you approve, and **Submit** opens the employer's application page with your answers ready to paste. The site never submits anything by itself.
+Applying is always yours to approve: **Prepare application** builds the tailored resume and the answers, the **Waiting for my OK** tab (under Applications) locks the exact version you approve, and **Submit** opens the employer's application page with your answers ready to paste. The site never submits anything by itself.
 
 ## What you get alerted about
 
@@ -196,12 +206,12 @@ Each device keeps its own timer, and signing out for inactivity on one device do
 | Telegram "not linked yet" | Tap Connect Telegram, press Start in the bot, then wait for the next run (or run the workflow). |
 | No email arrives | On Resend's free plan the address must be your Resend sign-up email. |
 | Adzuna shows an error | Check `ADZUNA_APP_ID` / `ADZUNA_APP_KEY`. Free keys have daily limits. |
-| Search finds nothing new | Use broader job titles or more cities in My profile → Job preferences, add companies under Companies & import, or import a posting you found elsewhere. |
-| A board "could not be read" | The company moved its careers site. Remove it under Find jobs → Companies & import, or add its new careers link. |
+| Search finds nothing new | Use broader job titles or more cities in My profile → What job I want, add companies under Add more jobs, or import a posting you found elsewhere. |
+| A board "could not be read" | The company moved its careers site. Remove it under Find jobs → Add more jobs, or add its new careers link. |
 
 ## For developers
 
-- `src/` is the source of the website (vanilla JS, no build tooling needed beyond `bash tools/build.sh`, which regenerates `index.html` and `worker/engine.mjs`). `src/02a-feeds.js` is the job search shared by the browser and the server job; `src/04a-motion.js` holds the scroll animations.
+- `src/` is the source of the website (vanilla JS, no build tooling needed beyond `bash tools/build.sh`, which regenerates `index.html` and `worker/engine.mjs`). `src/02a-feeds.js` is the job search shared by the browser and the server job; `src/02b-guide.js` holds the resume check and job-title suggestions; `src/04a-motion.js` holds the scroll animations.
 - `worker/run.mjs` is the scheduled job (Node 22). Dry run locally: `DRY_RUN=true SUPABASE_URL=… SUPABASE_SERVICE_ROLE_KEY=… node worker/run.mjs`.
 - `dev/mock-server.mjs` mocks Supabase (auth + REST), the job APIs, Telegram, Resend and push for local testing. The site it serves gets a test `config.js`, so local sign-ups never touch your real database.
 - Tests (run `bash tools/build.sh` and `npm ci` in `worker/` first):
