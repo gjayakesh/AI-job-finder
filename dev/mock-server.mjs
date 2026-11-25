@@ -16,7 +16,7 @@ const API_PORT = +process.env.MOCK_API_PORT || 54321, SITE_PORT = +process.env.M
 const API_ORIGIN = 'http://localhost:' + API_PORT;
 const SERVICE_KEY = 'service-role-test-key', ANON_KEY = 'anon-test-key';
 const AUTOCONFIRM = process.env.MOCK_AUTOCONFIRM !== '0';
-const st = { users: [], rows: [], sessions: {}, emails: [], telegram: [], tgQueue: [], pushes: [], log: [], clock: 0, confirmTokens: {} };
+const st = { users: [], rows: [], sessions: {}, emails: [], telegram: [], tgQueue: [], pushes: [], log: [], clock: 0, confirmTokens: {}, deleted: [] };
 const now = () => { const t = Math.max(Date.now(), st.clock + 1); st.clock = t; return new Date(t).toISOString().replace('Z', '000+00:00'); };
 const b64u = o => Buffer.from(JSON.stringify(o)).toString('base64url');
 const jwt = (u, ttl = 3600) => `${b64u({ alg: 'HS256', typ: 'JWT' })}.${b64u({ sub: u.id, email: u.email, role: 'authenticated', aud: 'authenticated', exp: Math.floor(Date.now() / 1000) + ttl, session_id: crypto.randomUUID() })}.sig`;
@@ -56,8 +56,10 @@ async function rest(req, res, url) {
     return send(res, 200, page, { 'Content-Range': `${off}-${off + page.length - 1}/*` });
   }
   if (req.method === 'POST') {
+    if (st.docsFail) return send(res, 500, { code: 'XX000', message: 'internal error (test double)' });
     const body = await readBody(req); const arr = Array.isArray(body) ? body : [body];
     for (const b of arr) { if (!who.admin && b.user_id && b.user_id !== who.uid) return send(res, 403, { code: '42501', message: 'new row violates row-level security policy for table "docs"' }); }
+    for (const b of arr) { const owner = b.user_id || who.uid; if (st.deleted.includes(owner)) return send(res, 409, { code: '23503', details: `Key (user_id)=(${owner}) is not present in table "users".`, hint: null, message: 'insert or update on table "docs" violates foreign key constraint "docs_user_id_fkey"' }); }
     for (const b of arr) {
       const row = { user_id: b.user_id || who.uid, kind: b.kind, id: b.id, data: b.data, updated_at: now() };
       const i = st.rows.findIndex(r => r.user_id === row.user_id && r.kind === row.kind && r.id === row.id);
@@ -70,6 +72,28 @@ async function rest(req, res, url) {
     return send(res, 204);
   }
   return send(res, 405, { message: 'method' });
+}
+// public.delete_my_account(): removes the caller's login and, by cascade, every row they own. POST /__rpc switches its behaviour: {"missing":true} = a database that never got the function; {"fail":true} = a server error, nothing deleted; {"lose":true} = deleted, but the reply never arrives; {"expired":true} = 401 JWT expired; {"denied":true} = 42501 permission denied; {"delay":ms} = answer late (combine with the others).
+// Two more switches shape GoTrue: {"userErr":"session_not_found"|"bad_jwt"} makes GET /user refuse a valid token, {"logoutFail":true} makes POST /logout answer 500.
+async function deleteAccountRpc(req, res) {
+  if (!req.headers.apikey) return send(res, 401, { message: 'No API key found in request' });
+  if (req.method !== 'POST') return send(res, 405, { message: 'method' });
+  if (st.rpcMissing) return send(res, 404, { code: 'PGRST202', message: 'Could not find the function public.delete_my_account without parameters in the schema cache', hint: null, details: 'Searched for the function public.delete_my_account without parameters, but no matches were found in the schema cache.' });
+  const who = whoami(req);
+  if (who.expired) return send(res, 401, { code: 'PGRST301', message: 'JWT expired' });
+  if (who.badjwt) return send(res, 401, { code: 'PGRST301', message: 'Invalid JWT' });
+  if (!who.uid) return send(res, 401, { code: '42501', message: 'permission denied for function delete_my_account' });
+  if (st.rpcDelay) await new Promise(r => setTimeout(r, st.rpcDelay));
+  if (st.rpcExpired) return send(res, 401, { code: 'PGRST301', message: 'JWT expired' });
+  if (st.rpcDenied) return send(res, 403, { code: '42501', message: 'permission denied for function delete_my_account' });
+  if (st.rpcFail) return send(res, 500, { code: 'XX000', message: 'internal error (test double: nothing was deleted)' });
+  st.rows = st.rows.filter(r => r.user_id !== who.uid);
+  st.users = st.users.filter(u => u.id !== who.uid);
+  for (const [rt, id] of Object.entries(st.sessions)) if (id === who.uid) delete st.sessions[rt];
+  if (!st.deleted.includes(who.uid)) st.deleted.push(who.uid);
+  st.log.push('deleted account ' + who.uid);
+  if (st.rpcLose) { req.socket.destroy(); return; }
+  return send(res, 204);
 }
 async function auth(req, res, url) {
   const p = url.pathname.replace('/auth/v1', ''); const body = ['POST', 'PUT'].includes(req.method) ? await readBody(req) : {};
@@ -88,11 +112,17 @@ async function auth(req, res, url) {
     return err(400, 'unsupported grant', 'validation_failed');
   }
   if (p === '/user') {
-    const who = whoami(req); const u = st.users.find(x => x.id === who.uid); if (!u) return err(401, 'invalid JWT', 'bad_jwt');
+    const who = whoami(req); const u = st.users.find(x => x.id === who.uid); if (!u) return who.uid ? err(403, 'User from sub claim in JWT does not exist', 'user_not_found') : err(401, 'invalid JWT', 'bad_jwt');
+    if (st.userErr === 'session_not_found') return err(403, 'Session from session_id claim in JWT does not exist', 'session_not_found');
+    if (st.userErr === 'bad_jwt') return err(401, 'invalid JWT: unable to parse or verify signature', 'bad_jwt');
     if (req.method === 'PUT' && body.password) u.password = body.password;
     return send(res, 200, userJSON(u));
   }
-  if (p === '/logout') return send(res, 204);
+  if (p === '/logout') {   // like GoTrue: a valid token whose user is gone gets 403 user_not_found (supabase-js ignores that); {"logoutFail":true} answers 500 (supabase-js does not)
+    const who = whoami(req); if (st.logoutFail) return err(500, 'logout failed (test double)', 'unexpected_failure');
+    if (who.uid && !st.users.some(x => x.id === who.uid)) return err(403, 'User from sub claim in JWT does not exist', 'user_not_found');
+    return send(res, 204);
+  }
   if (p === '/recover' || p === '/otp') { st.emails.push({ to: body.email, subject: p }); return send(res, 200, {}); }
   if (p === '/settings') return send(res, 200, { external: { email: true }, disable_signup: false, mailer_autoconfirm: AUTOCONFIRM });
   return err(404, 'not found ' + p, 'not_found');
@@ -158,7 +188,10 @@ async function external(req, res, url) {
   }
   if (p === '/mock/resend/emails') { const body = await readBody(req); if ((req.headers.authorization || '') !== 'Bearer RESENDKEY') return send(res, 401, { message: 'API key is invalid' }); st.emails.push({ to: body.to, subject: body.subject, html: body.html, from: body.from }); return send(res, 200, { id: 'em_' + st.emails.length }); }
   if (p === '/__state') return send(res, 200, st);
-  if (p === '/__reset') { Object.assign(st, { users: [], rows: [], sessions: {}, emails: [], telegram: [], tgQueue: [], pushes: [], log: [], gone: [] }); return send(res, 200, { ok: true }); }
+  if (p === '/__reset') { Object.assign(st, { users: [], rows: [], sessions: {}, emails: [], telegram: [], tgQueue: [], pushes: [], log: [], gone: [], deleted: [], rpcMissing: false, rpcFail: false, rpcLose: false, rpcExpired: false, rpcDenied: false, rpcDelay: 0, userErr: null, logoutFail: false, docsFail: false }); return send(res, 200, { ok: true }); }
+  if (p === '/__rpc') { const body = await readBody(req); Object.assign(st, { rpcMissing: !!body.missing, rpcFail: !!body.fail, rpcLose: !!body.lose, rpcExpired: !!body.expired, rpcDenied: !!body.denied, rpcDelay: +body.delay || 0, userErr: body.userErr || null, logoutFail: !!body.logoutFail }); return send(res, 200, { ok: true }); }
+  if (p === '/__docs') { const body = await readBody(req); st.docsFail = !!body.fail; return send(res, 200, { ok: true }); }   // {"fail":true}: every write to docs answers 500 (a genuine database failure, for the worker test)
+  if (p === '/__deleted') { const body = await readBody(req); st.deleted = (body.ids || []).map(String); return send(res, 200, { ok: true }); }   // marks accounts as deleted without removing their rows, to test a deletion that happens in the middle of a run
   if (p === '/__tg') { const body = await readBody(req); st.tgQueue.push({ update_id: 1000 + st.tgQueue.length, message: { message_id: 1, chat: { id: body.chat || 777001 }, from: { username: body.user || 'tester' }, text: body.text } }); return send(res, 200, { ok: true }); }
   if (p === '/__rows') { const body = await readBody(req); for (const b of body) { const row = { ...b, updated_at: now() }; const i = st.rows.findIndex(r => r.user_id === row.user_id && r.kind === row.kind && r.id === row.id); if (i >= 0) st.rows[i] = row; else st.rows.push(row); } return send(res, 200, { ok: true }); }
   return send(res, 404, { message: 'no mock for ' + p });
@@ -167,6 +200,7 @@ http.createServer(async (req, res) => {
   if (req.method === 'OPTIONS') return send(res, 204);
   const url = new URL(req.url, 'http://localhost');
   try {
+    if (url.pathname === '/rest/v1/rpc/delete_my_account') return deleteAccountRpc(req, res);
     if (url.pathname.startsWith('/rest/v1/docs')) return rest(req, res, url);
     if (url.pathname.startsWith('/auth/v1')) return auth(req, res, url);
     return external(req, res, url);

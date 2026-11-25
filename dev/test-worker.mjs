@@ -74,6 +74,25 @@ const st2 = (s.rows.find(r => r.kind === 'server' && r.id === 'status') || {}).d
 check('Missing secrets are reported, not crashed', r4.code === 0 && /missing/.test(st2.channels.telegram) && /missing/.test(st2.channels.email) && /missing/.test(st2.channels.push), st2.channels);
 const r6 = run({ SUPABASE_SERVICE_ROLE_KEY: 'sb_secret_testkey' });
 check('New-style sb_secret_ key works (sent only in the apikey header)', r6.code === 0 && /user done/.test(r6.out), r6.out.slice(-200));
+await j('/__deleted', { ids: [U] });   // the account is deleted while the job runs: the database now refuses its writes (foreign key)
+const r9 = run({ FORCE_DISCOVERY: 'true' });
+check('An account deleted while the job runs is skipped quietly, not reported as a failure', r9.code === 0 && /account was deleted while the job ran/.test(r9.out) && !/user failed/.test(r9.out), r9.out.slice(-300));
+await j('/__deleted', { ids: [] });
+// a second account, while only the first is deleted mid-run: the second must still be served
+const V2 = '22222222-2222-4222-8222-222222222222';
+await j('/__rows', [
+  { user_id: V2, kind: 'profile', id: 'main', data: { name: 'Second User', skills: ['Python'], projects: [], experiences: [], education: [] } },
+  { user_id: V2, kind: 'prefs', id: 'main', data: { titles: ['Python Developer'], locations: ['Hyderabad'], expMin: 0, expMax: 2, workModes: [], employmentTypes: ['full_time'] } },
+  { user_id: V2, kind: 'notify', id: 'main', data: { email: '', emailOn: false, telegramOn: false, pushOn: false, pushSubs: [] } },
+]);
+await j('/__deleted', { ids: [U] });
+const r10 = run();
+check('When one account is deleted mid-run, the next account is still served', r10.code === 0 && /account was deleted while the job ran/.test(r10.out) && /user done/.test(r10.out), r10.out.slice(-400));
+await j('/__deleted', { ids: [] });
+await j('/__docs', { fail: true });   // a genuine database failure is not a deleted account: the run must still fail
+const r11 = run({ FORCE_DISCOVERY: 'true' });
+check('A genuine database failure still fails the run (only a deleted account is skipped)', r11.code === 1 && /user failed/.test(r11.out), r11.out.slice(-300));
+await j('/__docs', { fail: false });
 const r5 = spawnSync('node', ['run.mjs'], { cwd: 'worker', env: { ...env, SUPABASE_SERVICE_ROLE_KEY: '' }, encoding: 'utf8' });
 check('Missing database secret stops with a clear message', r5.status === 1 && /SUPABASE_SERVICE_ROLE_KEY/.test(r5.stderr), r5.stderr);
 console.log(`\n==== worker: ${results.filter(r => r[1]).length} passed, ${results.filter(r => !r[1]).length} failed ====`);

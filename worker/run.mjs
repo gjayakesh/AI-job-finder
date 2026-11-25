@@ -295,7 +295,14 @@ async function main() {
   const users = []; for (const id of ids) users.push(await loadUser(id));
   await linkTelegram(users);
   const summary = [];
-  for (const U of users) { try { summary.push(await processUser(U)); } catch (e) { console.error('user failed:', e.message); summary.push({ error: e.message }); } }
+  for (const U of users) {
+    try { summary.push(await processUser(U)); }
+    catch (e) {
+      // Someone deleted their account while this job was running: the database refuses further writes for it (foreign key). That is not a failure of the job.
+      if (/\b23503\b|docs_user_id_fkey/.test(e.message)) { log('an account was deleted while the job ran; skipped it'); summary.push({ skipped: 'account deleted' }); }
+      else { console.error('user failed:', e.message); summary.push({ error: e.message }); }
+    }
+  }
   log('summary', JSON.stringify(summary));
   if (summary.some(s => s.error)) process.exitCode = 1;
 }

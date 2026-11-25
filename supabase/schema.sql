@@ -35,5 +35,22 @@ drop trigger if exists docs_touch on public.docs;
 create trigger docs_touch before insert or update on public.docs
   for each row execute function public.docs_touch();
 
--- Check: should list one policy named "Users manage their own rows".
-select policyname, cmd from pg_policies where tablename = 'docs';
+-- Lets a signed-in user permanently delete their own account (Settings → Account & AI → Delete account).
+-- It removes the login itself and every row in public.docs. It can only ever delete the caller's own account.
+-- Supabase's advisor flags it as "Signed-In Users Can Execute SECURITY DEFINER Function". That is intended: the browser calls it.
+create or replace function public.delete_my_account() returns void
+language plpgsql security definer set search_path = '' as $$
+begin
+  if (select auth.uid()) is null then
+    raise exception 'You must be signed in to delete your account.' using errcode = '28000';
+  end if;
+  delete from public.docs where user_id = (select auth.uid());
+  delete from auth.users where id = (select auth.uid());
+end; $$;
+revoke all on function public.delete_my_account() from public, anon;
+grant execute on function public.delete_my_account() to authenticated;
+
+-- Check: should list one policy ("Users manage their own rows") and one function (delete_my_account).
+select 'policy' as kind, policyname::text as name from pg_policies where tablename = 'docs'
+union all
+select 'function', proname::text from pg_proc where proname = 'delete_my_account' and pronamespace = 'public'::regnamespace;

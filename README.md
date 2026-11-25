@@ -28,11 +28,11 @@ Six sections in the left menu; related pages are tabs inside each one.
 | **Applications** | **My applications**, **Waiting for my OK**, **Interviews**, **Offers**. |
 | **My profile** | **Resume** (upload), **Resume check** (what to improve), **My details** (your profile), **What job I want**. |
 | **Progress** | **Overview** numbers and charts, plus what shortlists and rejections teach you. |
-| **Settings** | **Account & AI** (password, optional Gemini key, export or delete data), **Notifications**, **Activity log**. |
+| **Settings** | **Account & AI** (password, download or delete your data, an optional Gemini key, and **Delete account**), **Notifications**, **Activity log**. |
 
-**Help** (the ? in the top bar) explains how the site works in plain words, answers common questions and defines the jargon. Every page also has a one-line note saying what it is for.
+**Help** (top bar) explains how the site works in plain words, shows where everything is, answers common questions and defines the jargon. Every page also has a one-line note saying what it is for.
 
-**Ask AI** (chat bubble in the top bar) takes plain-language commands such as "search now". Older page addresses such as `#approvals` or `#config` still open the right tab.
+**Ask AI** (top bar) takes plain-language commands such as "search now". Older page addresses such as `#approvals` or `#config` still open the right tab.
 
 ### What happens when you upload a resume
 
@@ -60,8 +60,10 @@ git push
 
 ## Step 2 — Database table ✅ already done
 
-The `docs` table, its row-level security policy and the update trigger were created in your project **AI-JOB** (`vrytpkcxmmgjltihptee`) on 9 Nov 2026 and verified: signed-out visitors are refused, and a signed-in user can't write another user's rows. Supabase's security advisor reports no issues.
-If you ever create a new project, paste `supabase/schema.sql` into **SQL Editor → Run** to recreate it.
+The `docs` table, its row-level security policy and the update trigger were created in your project **AI-JOB** (`vrytpkcxmmgjltihptee`) on 9 Nov 2026 and verified: signed-out visitors are refused, and a signed-in user can't write another user's rows. Supabase's security advisor reported no issues with them.
+If you ever create a new project, paste `supabase/schema.sql` into **SQL Editor → Run** to recreate it. The file is safe to run again.
+
+✅ **Account deletion is switched on** (25 Nov 2026). The database function `delete_my_account()` (also in `supabase/schema.sql`) was added to AI-JOB as the migration `add_delete_my_account_rpc` and checked there: only signed-in users can run it, it can only delete the caller's own account, and a test on throwaway accounts (rolled back afterwards) showed it removes that account and its rows and leaves every other account alone. Supabase's security advisor now lists this one function as *Signed-In Users Can Execute SECURITY DEFINER Function*. That warning is intended, because the browser has to be able to call it. A project set up before the function existed needs the file run once more; until then **Settings → Delete account** says that nothing was deleted.
 
 ## Step 3 — Website connected to Supabase ✅ already done
 
@@ -169,7 +171,7 @@ Every alert also appears in the bell icon inside the site. Each alert is sent on
 
 ## Optional — AI with a free Gemini key
 
-**Settings → Account & AI** → **AI assistant** → paste a key from aistudio.google.com/apikey → tick **Use Gemini**. The site asks before sending your resume or profile. On Google's free tier, prompts may be used to improve Google's products. If you'd rather keep everything private, leave it off: the local engine handles every feature.
+**Settings → Account & AI** → open **AI assistant (optional)** → paste a key from aistudio.google.com/apikey → tick **Use Gemini** → **Save AI settings**. The site asks before sending your resume or profile. On Google's free tier, prompts may be used to improve Google's products. If you'd rather keep everything private, leave it off: the local engine handles every feature.
 
 ## Staying signed in
 
@@ -179,6 +181,20 @@ Once you sign in on a device, you stay signed in there: reloading, closing the t
 - that device goes **30 days without activity**. Opening the site, clicking, typing and scrolling all count as activity, so using it at least once a month keeps you signed in. The next time you open it after 30 idle days, it asks you to sign in again and says why.
 
 Each device keeps its own timer, and signing out for inactivity on one device doesn't affect your other devices. If the server can't be reached (no internet, or the Supabase project is paused), you are not signed out: the sign-in screen says the server is unreachable, and reloading once you're back online returns you to your data.
+
+## Deleting your account
+
+**Settings → Account & AI → Delete account** closes the account and erases everything in it: profile, resumes, jobs, applications, alert settings (including the Telegram link and push devices) and the activity log. It cannot be undone and it signs the person out on every device. The dialog names the account, offers to download a copy of the data first, and the red button stays off until the person types `DELETE`. The same email can be used to sign up again later; the new account starts empty. Backups and system logs may keep a copy for a short time, and messages already sent to the person's email or Telegram stay where they are. **Download my data** saves everything stored for the account (the AI key and push-device keys are left out of the file).
+
+**Delete my data** (on the same page) is the lighter option: it clears the data but keeps the account.
+
+How it works: the page calls the database function `public.delete_my_account()` (see `supabase/schema.sql`). It can only delete the account of whoever calls it, removes the login, and the `docs` rows go with it (`on delete cascade`). The function is safe to call twice, so a retry after a lost reply is harmless.
+
+- The page says "nothing was deleted" only when the reply proves the function never ran (function missing, sign-in expired). After a lost reply or a server error it asks Supabase whether the account still exists and says what it found.
+- Before calling, it checks that the browser's sign-in is still the account the dialog named, so a second tab signed in as someone else cannot cause the wrong account to be deleted.
+- Another device signed in to the same account is signed out the next time it tries to save (the database refuses the write) or its sign-in refreshes, whichever comes first.
+- The scheduled job treats an account deleted in the middle of a run as skipped, not failed.
+- Only this site's own sign-in keys are removed from the browser. Other apps on the same web address keep theirs.
 
 ## Keeping it running for free
 
@@ -207,13 +223,14 @@ Each device keeps its own timer, and signing out for inactivity on one device do
 | No email arrives | On Resend's free plan the address must be your Resend sign-up email. |
 | Adzuna shows an error | Check `ADZUNA_APP_ID` / `ADZUNA_APP_KEY`. Free keys have daily limits. |
 | Search finds nothing new | Use broader job titles or more cities in My profile → What job I want, add companies under Add more jobs, or import a posting you found elsewhere. |
-| A board "could not be read" | The company moved its careers site. Remove it under Find jobs → Add more jobs, or add its new careers link. |
+| A career page "could not be read" | The company moved its careers site. Remove it under Find jobs → Add more jobs, or add its new careers link. |
+| Delete account says it is "not switched on" | The database never got `delete_my_account()`. Paste `supabase/schema.sql` into SQL Editor → Run (safe to repeat). Nothing was deleted. |
 
 ## For developers
 
 - `src/` is the source of the website (vanilla JS, no build tooling needed beyond `bash tools/build.sh`, which regenerates `index.html` and `worker/engine.mjs`). `src/02a-feeds.js` is the job search shared by the browser and the server job; `src/02b-guide.js` holds the resume check and job-title suggestions; `src/04a-motion.js` holds the scroll animations.
 - `worker/run.mjs` is the scheduled job (Node 22). Dry run locally: `DRY_RUN=true SUPABASE_URL=… SUPABASE_SERVICE_ROLE_KEY=… node worker/run.mjs`.
-- `dev/mock-server.mjs` mocks Supabase (auth + REST), the job APIs, Telegram, Resend and push for local testing. The site it serves gets a test `config.js`, so local sign-ups never touch your real database.
+- `dev/mock-server.mjs` mocks Supabase (auth + REST), the job APIs, Telegram, Resend and push for local testing. The site it serves gets a test `config.js`, so local sign-ups never touch your real database. `POST /__rpc` switches how the delete function behaves (`{"missing":true}` = never installed, `{"fail":true}` = server error, `{"lose":true}` = deleted but the reply is lost) so the account-deletion paths can be tested.
 - Tests (run `bash tools/build.sh` and `npm ci` in `worker/` first):
   - `node dev/test-engine.mjs` — title, seniority and location filters, posting extraction, scoring. No server needed.
   - `node dev/mock-server.mjs` in one terminal (set `MOCK_SITE_PORT` if 8080 is taken), then `NODE_TLS_REJECT_UNAUTHORIZED=0 node dev/test-worker.mjs` for the server job.

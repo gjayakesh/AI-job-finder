@@ -358,7 +358,7 @@ function prefAmbiguities(p) {
 
 /* ============ Job platforms & discovery links ============ */
 const PLATFORMS = [
-  { id: 'boards', name: 'Company career boards', status: 'Connected', note: 'Greenhouse, Lever, Ashby and SmartRecruiters publish each company’s open roles through a public API. Searched live from your browser; every job links to the employer’s own application page.' },
+  { id: 'boards', name: 'Company career pages', status: 'Connected', note: 'Greenhouse, Lever, Ashby and SmartRecruiters publish each company’s open roles through a public API. Searched live from your browser; every job links to the employer’s own application page.' },
   { id: 'remote', name: 'Remotive and Remote OK', status: 'Connected', note: 'Public remote-job APIs. Only roles open to India or worldwide are kept; each links back to the original listing.' },
   { id: 'adzuna', name: 'Adzuna', status: 'Limited', note: 'India-wide search through the scheduled server job. Needs your free Adzuna key in GitHub secrets (README).' },
   { id: 'linkedin', name: 'LinkedIn', status: 'Manual', note: 'LinkedIn prohibits unauthorized scraping and automated applications. Open the search, then import jobs by link and description.' },
@@ -703,7 +703,7 @@ async function tailorResume(job, { forceLocal = false } = {}) {
   const v = { id: uid('v'), jobId: job.id, resumeId: (latestResume() || {}).id || null, version: versionNo, createdAt: nowISO(), engine, content: t, coverage: pct(covered.length, kws.length), keywordsCovered: covered, keywordsMissing: kws.filter(k => !covered.includes(k)), title: `${p.name || 'Resume'} — ${job.company} ${job.title}` };
   v.hash = await sha256(text);
   S.versions[v.id] = v; save.version(v);
-  logAgent('Resume Optimization Agent', 'Generated tailored resume v' + versionNo, `${job.title} @ ${job.company}; ATS coverage ${v.coverage}%; guard removed ${t.guard.length} item(s)`, engine);
+  logAgent('Resume Optimization Agent', 'Generated tailored resume v' + versionNo, `${job.title} @ ${job.company}; keyword match ${v.coverage}%; fact check removed ${t.guard.length} item(s)`, engine);
   return v;
 }
 function latestResume() { return Object.values(S.resumes).sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt))[0] || null; }
@@ -855,7 +855,7 @@ function answerFromProfile(key, p, job, v) {
     case 'portfolio': return [p.github || p.portfolio, 'Profile › Contact'];
     case 'totalExp': return [String(y), y ? 'Profile › Experience' : 'Profile › Experience (no full-time roles)'];
     case 'currentCtc': return [p.currentCtc ? lpa(+p.currentCtc) : (y < 1 && !(p.experiences || []).some(e => !isIntern(e)) ? 'Not applicable (fresher)' : ''), p.currentCtc ? 'Profile › Compensation' : 'Profile › Experience'];
-    case 'expectedCtc': { const a = pr.salaryMin ?? p.expectedMin, b = pr.salaryMax ?? p.expectedMax; return [(a != null || b != null) ? salaryRange(a, b) : '', 'Job preferences › Salary']; }
+    case 'expectedCtc': { const a = pr.salaryMin ?? p.expectedMin, b = pr.salaryMax ?? p.expectedMax; return [(a != null || b != null) ? salaryRange(a, b) : '', 'What job I want › Salary']; }
     case 'notice': return [p.noticePeriod || '', 'Profile › Availability'];
     case 'relocate': return [p.relocate === true ? 'Yes' : p.relocate === false ? 'No' : '', 'Profile › Availability'];
     case 'qualification': return [edu ? [edu.degree, edu.institution].filter(Boolean).join(', ') : '', 'Profile › Education'];
@@ -1048,7 +1048,7 @@ function buildReport(type) {
     '## All-time conversion', `- Shortlisting rate: **${A.shortlistRate}%** of ${A.applied} applications`, `- Rejection rate: **${A.rejectionRate}%**`, `- Interview rate: **${A.interviewRate}%**`, `- Offer conversion (offers ÷ interviews): **${A.offerRate}%**`, '',
     '## Most common missing skills', ...(A.missing.length ? A.missing.slice(0, 6).map(([s, n]) => `- ${s}: missing in ${n} job${n > 1 ? 's' : ''}`) : ['- None recorded yet']), '',
     '## Where the opportunities are', ...Object.entries(A.locs).sort((a, b) => b[1].jobs - a[1].jobs).slice(0, 5).map(([c, v]) => `- ${c}: ${v.jobs} job${v.jobs > 1 ? 's' : ''}${v.scores.length ? `, average match ${Math.round(sum(v.scores) / v.scores.length)}` : ''}${v.sal.length ? `, median pay ${lpa(v.sal.sort((a, b) => a - b)[Math.floor(v.sal.length / 2)])}` : ''}`), '',
-    '## Resume performance', `- Average ATS coverage on shortlisted applications: ${A.coverageShort ?? '—'}%`, `- Average ATS coverage on rejected applications: ${A.coverageRej ?? '—'}%`, '',
+    '## Resume performance', `- Average keyword match on shortlisted applications: ${A.coverageShort ?? '—'}%`, `- Average keyword match on rejected applications: ${A.coverageRej ?? '—'}%`, '',
     '## Recommendations', ...(A.missing[0] ? [`- Close the most frequent gap: ${A.missing.slice(0, 2).map(x => x[0]).join(' and ')}.`] : []),
     ...(A.applied < 5 ? ['- Apply to more roles: fewer than 5 applications make the rates above unreliable.'] : []),
     ...(A.awaiting ? [`- ${A.awaiting} application${A.awaiting > 1 ? 's are' : ' is'} waiting for your approval.`] : []),

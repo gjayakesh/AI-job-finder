@@ -39,7 +39,9 @@ async function boot() {
   if (S.realMode === 'signedout') {
     const linkErr = urlErr ? (/expired|invalid/i.test(urlErr) ? 'That email link has expired or was already used. Sign in with your password or request a new link.' : urlErr) : '';
     const netErr = Store.offline ? 'Can’t reach the server right now. You are still signed in on this device: check your connection, then reload the page.' : '';
-    S.mode = 'auth'; S.ui.auth = { mode: 'signin', msg: idleOut ? IDLE_MSG : qs.has('code') && !urlErr ? 'Your email is confirmed. Sign in to continue.' : '', err: linkErr || netErr };
+    // Someone who has never signed in on this browser is most likely new, so the page opens on "Create your account".
+    const firstVisit = !lsGet(SEEN_KEY) && !idleOut && !qs.has('code') && !urlErr && !netErr;
+    S.mode = 'auth'; S.ui.auth = { mode: firstVisit ? 'signup' : 'signin', msg: idleOut ? IDLE_MSG : qs.has('code') && !urlErr ? 'Your email is confirmed. Sign in to continue.' : '', err: linkErr || netErr };
     return render();
   }
   if (S.realMode === 'cloud') return afterLogin(S.session);

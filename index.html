@@ -66,6 +66,7 @@ input,textarea{caret-color:var(--accent)}
 ::placeholder{color:var(--muted);opacity:1}
 .main,.rail,.modal,.chat,.pre,.resume-doc,.notif-panel,.kanban,.tbl-wrap,.boards,.tabs{scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--muted) 42%,transparent) transparent}
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+[hidden]{display:none!important}
 .prose{max-width:72ch}
 ul.plain{margin:6px 0;padding-left:18px}
 summary{cursor:pointer}
@@ -112,7 +113,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .to-top svg{width:18px;height:18px}
 .top h1{font-size:20px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .top .sp{flex:1}
-.menu-btn{display:none}
+.icon-btn.menu-btn{display:none}
 .content{padding:20px 24px 48px;display:flex;flex-direction:column;gap:18px;max-width:1240px;width:100%}
 .banner{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:10px 14px;border-radius:10px;background:var(--hi-soft);color:var(--ink);border:1px solid color-mix(in srgb,var(--hi) 30%,transparent)}
 .banner.info{background:var(--info-soft);border-color:color-mix(in srgb,var(--info) 30%,transparent)}
@@ -124,6 +125,8 @@ button,input,select,textarea{font:inherit;color:inherit}
 .card-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .card-h .sp{flex:1}
 .card-h p{color:var(--muted);font-size:12.5px}
+.card.danger-zone{border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.card.danger-zone h2{color:var(--bad)}
 .grid{display:grid;gap:16px}
 .g2{grid-template-columns:repeat(2,minmax(0,1fr))}
 .g3{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -146,6 +149,9 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:4px 0;width:100%}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .btn.primary:hover{filter:brightness(1.07)}
 .btn.danger{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 35%,var(--line))}
+.btn.danger:hover{border-color:var(--bad)}
+.btn.danger.solid{background:var(--bad);border-color:var(--bad);color:var(--on-bad)}
+.btn.danger.solid:hover{filter:brightness(1.08)}
 .btn.ghost{border-color:transparent;background:transparent}
 .btn.sm{padding:4px 9px;font-size:12px;border-radius:7px}
 .btn[disabled]{opacity:.5;cursor:not-allowed}
@@ -166,6 +172,8 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:4px 0;width:100%}
 .icon-btn{transition:border-color .15s,transform .1s}
 .icon-btn:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
 .icon-btn:active{transform:translateY(1px)}
+.icon-btn.labeled span{display:none}
+@media (min-width:641px){.icon-btn.labeled{width:auto;padding:0 12px 0 10px;gap:7px;display:inline-flex;align-items:center;color:var(--ink);text-decoration:none;font-size:13px;font-weight:500;white-space:nowrap}.icon-btn.labeled span{display:inline}.icon-btn.labeled svg{color:var(--accent)}}
 .dot{position:absolute;top:-4px;right:-4px;min-width:17px;height:17px;border-radius:9px;background:var(--bad);color:var(--on-bad);font-size:10.5px;font-weight:600;display:grid;place-items:center;padding:0 4px}
 
 .pill{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:2px 9px;font-size:11.5px;font-weight:600;white-space:nowrap;background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
@@ -183,6 +191,7 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:4px 0;width:100%}
 .chip.pref{background:var(--warn-soft);border-color:transparent;color:var(--warn)}
 .chip.acc{background:var(--accent-soft);border-color:transparent;color:var(--accent)}
 .chips{display:flex;flex-wrap:wrap;gap:5px}
+.legend{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;margin:0}
 .engine{font:500 10.5px var(--f-mono);padding:1px 6px;border-radius:4px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
 .engine.ai{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
 
@@ -225,11 +234,16 @@ textarea{resize:vertical;min-height:70px;line-height:1.45}
 input:focus,select:focus,textarea:focus{outline:2px solid color-mix(in srgb,var(--accent) 60%,transparent);outline-offset:0;border-color:var(--accent)}
 .check{display:inline-flex;gap:6px;align-items:center;font-size:13px;cursor:pointer}
 .check input{accent-color:var(--accent)}
+label.f > span.pw{position:relative;display:block;color:var(--ink)}
+.pw input{padding-right:62px}
+.pw-toggle{position:absolute;right:3px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:var(--accent);font-weight:600;font-size:12.5px;cursor:pointer;padding:6px 10px;border-radius:6px}
+.pw-toggle:hover{background:var(--accent-soft)}
 .fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
 .fgrid .wide{grid-column:1/-1}
 .repeat{border:1px dashed var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px;background:var(--surface-2)}
 
-.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);overflow-x:auto}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);overflow-x:auto;overflow-y:hidden}
+@media (pointer:coarse){.tabs{scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}}
 .tabs a{padding:8px 12px;text-decoration:none;color:var(--muted);font-weight:500;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;cursor:pointer;transition:color .12s,border-color .12s}
 .tabs a:hover{color:var(--ink)}
 .tabs a.on{color:var(--accent);border-bottom-color:var(--accent)}
@@ -240,6 +254,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid color-mix(in srgb,var(
 details.more>summary{cursor:pointer;color:var(--muted);font-size:13.5px}
 details.more>summary b{color:var(--ink)}
 details.more[open]>summary{color:var(--ink)}
+details.card{gap:0}
 details.card.more{padding-block:14px}
 
 .kanban{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(220px,1fr);gap:12px;overflow-x:auto;padding-bottom:6px}
@@ -394,7 +409,7 @@ svg.chart .grid-l{stroke:var(--line);stroke-width:1}
   .auth-card{position:static;order:-1}
   .landing{padding:16px 16px 56px}
   .landing-top{padding-bottom:20px}
-  .menu-btn{display:grid}
+  .icon-btn.menu-btn{display:grid}
   .g2,.g3{grid-template-columns:1fr}
   .content{padding:16px 16px 40px}
   .top{padding:10px 16px}
@@ -411,13 +426,15 @@ svg.chart .grid-l{stroke:var(--line);stroke-width:1}
   .tabs a{padding-block:12px}
   .suggest button{min-height:40px;padding-inline:14px}
   .check{min-height:36px}
+  .pw-toggle{min-height:40px;min-width:52px}
+  summary{padding-block:6px;margin-block:-6px}   /* a taller tap area for the one-line "show more" rows, without moving anything */
+  details.more>summary{padding-block:12px;margin-block:-12px}   /* cards have room for more */
   .to-top{width:46px;height:46px}
   input[type=text],input[type=email],input[type=password],input[type=tel],input[type=url],input[type=number],input[type=date],input[type=time],input[type=datetime-local],input[type=search],select,textarea{font-size:16px;min-height:44px}
 }
 @media (max-width:520px){body{font-size:16px}.small{font-size:14px}.meta{font-size:14px}.top .seg{display:none}.top h1{font-size:18px}.theme-opts{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.g4{grid-template-columns:1fr}.toasts{left:16px;right:16px}.job-card{grid-template-columns:auto 1fr}.job-card > :last-child{grid-column:1/-1}.qa{grid-template-columns:1fr}.frow{grid-template-columns:100px 1fr 54px}}
 
 /* ---- First-visit guidance: start card, setup window, resume check, help, sign-in switch ---- */
-.eyebrow{font-size:12.5px;font-weight:600;color:var(--accent);letter-spacing:.02em}
 .hero-start{gap:18px;padding:24px 26px;border-color:color-mix(in srgb,var(--accent) 35%,var(--line))}
 .hero-start h2{font-size:clamp(22px,3vw,28px);line-height:1.15}
 .hero-start .prose{font-size:15.5px;line-height:1.55;margin:0}
@@ -558,7 +575,7 @@ const withTimeout = (p, ms, code = 'timeout') => { let t; return Promise.race([p
 
 /* ============ Storage: Supabase cloud database (or this browser when not configured) ============ */
 const Store = {
-  w: {}, lastSync: null, syncing: false, offline: false,
+  w: {}, lastSync: null, syncing: false, offline: false, frozen: false, // frozen: saving is switched off while an account is being deleted
   async init() {
     if (CLOUD && CAP.sb) {
       const { data, error } = await CAP.sb.auth.getSession();
@@ -611,20 +628,21 @@ const Store = {
     if (!['cloud', 'local'].includes(S.mode)) return;
     const st = this.w[key] || (this.w[key] = { busy: false, next: undefined });
     st.next = data === null ? null : clone(data);
-    if (!st.busy) this._flush(key);
+    if (!st.busy && !this.frozen) this._flush(key);   // while frozen the change is kept, and thaw() sends it
   },
   dirty(key) { const st = this.w[key]; return !!(st && (st.busy || st.next !== undefined)); },
   async _flush(key) {
     const st = this.w[key]; st.busy = true;
-    while (st.next !== undefined) {
+    while (st.next !== undefined && !this.frozen) {
       const d = st.next; st.next = undefined;
       try { await this._write(key, d); }
       catch (e) {
         const msg = String((e && (e.message || e.code)) || e);
         if (/fetch|network|timeout/i.test(msg)) { await sleep(800 + Math.random() * 1200); try { await this._write(key, d); continue; } catch (e2) { e = e2; } }
         console.warn('save failed', key, e);
+        if (e && (e.code === '23503' || /violates foreign key/i.test(String(e.message || '')))) { if (typeof accountGone === 'function') accountGone(); break; }   // the database no longer has this account: it was deleted, probably on another device
         if (/JWT|expired|401/i.test(msg)) toast('Your session expired. Sign in again to keep saving.', 'bad');
-        else if (e && e.code === 'quota_exceeded') toast('Browser storage is full. Delete old jobs or resume versions in Configuration.', 'bad');
+        else if (e && e.code === 'quota_exceeded') toast('Browser storage is full. Delete old jobs or tailored resumes you no longer need.', 'bad');
         else toast('A change could not be saved (' + msg.slice(0, 80) + '). Check your connection.', 'bad');
       }
     }
@@ -638,6 +656,8 @@ const Store = {
     } else if (S.realMode === 'local') { if (d === null) lsDel('aca:' + key); else if (!lsSet('aca:' + key, JSON.stringify(d))) throw { code: 'quota_exceeded' }; }
   },
   pending() { return Object.values(this.w).some(s => s.busy || s.next !== undefined); },
+  /** Switch saving back on and send anything that was held back. */
+  thaw() { this.frozen = false; Object.keys(this.w).forEach(k => { const s = this.w[k]; if (s.next !== undefined && !s.busy) this._flush(k); }); },
   async deleteAll() {
     if (S.realMode === 'cloud') { const { error } = await CAP.sb.from('docs').delete().eq('user_id', S.uid); if (error) throw error; }
     else lsKeys().filter(k => k.startsWith('aca:') && k !== 'aca:theme').forEach(lsDel);
@@ -773,7 +793,7 @@ const AI = {
     if (S.settings.cloudPersonal === 'deny') return false;
     const ok = await confirmDialog({
       title: 'Send your profile to Gemini?',
-      body: `<p>This step uses your resume and career profile. Gemini can write it with judgment; the local engine uses rules and templates and never leaves your browser.</p><p class="muted small">On Google’s free tier, prompts may be used to improve Google’s products. You can change this any time in Configuration.</p>`,
+      body: `<p>This step uses your resume and career profile. Gemini can write it with judgment; the local engine uses rules and templates and never leaves your browser.</p><p class="muted small">On Google’s free tier, prompts may be used to improve Google’s products. You can change this any time in Settings.</p>`,
       ok: 'Allow Gemini for profile data', cancel: 'Use local engine',
     });
     S.settings.cloudPersonal = ok ? 'allow' : 'deny'; save.settings();
@@ -782,7 +802,7 @@ const AI = {
   },
   handleErr(e) {
     const c = e && e.code;
-    if (c === 'not_granted') { CAP.sampleOK = false; toast('Gemini rejected the API key (' + ((e && e.message) || '').slice(0, 80) + '). Check it in Configuration. Using the local engine.', 'bad'); }
+    if (c === 'not_granted') { CAP.sampleOK = false; toast('Gemini rejected the API key (' + ((e && e.message) || '').slice(0, 80) + '). Check it in Settings. Using the built-in engine.', 'bad'); }
     else if (c === 'rate_limited') toast('Gemini’s free-tier limit is reached. Used the local engine instead; try again later.');
     else if (c === 'cancelled') { }
     else if (c === 'refused') toast('Gemini declined this request. Used the local engine instead.');
@@ -829,14 +849,25 @@ const Busy = {
 function openModal(html, { wide = false, onClose } = {}) {
   const root = $('#modal-root');
   root.innerHTML = `<div class="modal-bg" data-act="modal-bg"><div class="modal ${wide ? 'wide' : ''}" role="dialog" aria-modal="true">${html}</div></div>`;
+  const heading = root.querySelector('.modal h2'); if (heading) { heading.id = 'modal-title'; root.querySelector('.modal').setAttribute('aria-labelledby', 'modal-title'); }
+  if (!root._trap) {   // Tab and Shift+Tab stay inside an open dialog instead of wandering onto the page behind it
+    root._trap = true;
+    root.addEventListener('keydown', e => {
+      if (e.key !== 'Tab') return; const m = root.querySelector('.modal'); if (!m) return;
+      const f = [...m.querySelectorAll('a[href],button,input,select,textarea,[tabindex]:not([tabindex="-1"])')].filter(x => !x.disabled && x.offsetParent !== null); if (!f.length) return;
+      const out = !m.contains(document.activeElement);
+      if (e.shiftKey && (out || document.activeElement === f[0])) { e.preventDefault(); f[f.length - 1].focus(); }
+      else if (!e.shiftKey && (out || document.activeElement === f[f.length - 1])) { e.preventDefault(); f[0].focus(); }
+    });
+  }
   root._onClose = onClose; root._back = root._back || window._trigger || document.activeElement;
   const f = root.querySelector('input,textarea,select,button.primary'); if (f) setTimeout(() => f.focus(), 20);
 }
 function closeModal(val) { const root = $('#modal-root'); const cb = root._onClose, back = root._back; root._onClose = null; root._back = null; root.innerHTML = ''; if (cb) cb(val); setTimeout(() => { if (back && back.isConnected && !back.disabled && !$('#modal-root').innerHTML) back.focus(); }, 40); }
 function confirmDialog({ title, body = '', ok = 'Confirm', cancel = 'Cancel', danger = false, input = null }) {
   return new Promise(res => {
-    openModal(`<h2>${esc(title)}</h2><div class="stack">${body}</div>${input ? `<label class="f"><span>${esc(input.label)}</span><input type="text" id="dlg-input" placeholder="${esc(input.placeholder || '')}"></label>` : ''}
-      <div class="row" style="justify-content:flex-end"><button class="btn" type="button" data-act="dlg-no">${esc(cancel)}</button><button class="btn ${danger ? 'danger' : 'primary'}" type="button" data-act="dlg-yes">${esc(ok)}</button></div>`,
+    openModal(`<h2>${esc(title)}</h2><div class="stack">${body}</div>${input ? `<label class="f"><span>${esc(input.label)}</span><input type="text" id="dlg-input" autocomplete="off" spellcheck="false" placeholder="${esc(input.placeholder || '')}" ${input.match ? `data-match="${esc(input.match)}"` : ''}></label>` : ''}
+      <div class="row" style="justify-content:flex-end"><button class="btn" type="button" data-act="dlg-no">${esc(cancel)}</button><button class="btn ${danger ? 'danger solid' : 'primary'}" type="button" data-act="dlg-yes" ${input && input.match ? 'disabled' : ''}>${esc(ok)}</button></div>`,
       { onClose: v => res(v) });
   });
 }
@@ -1200,7 +1231,7 @@ function prefAmbiguities(p) {
 
 /* ============ Job platforms & discovery links ============ */
 const PLATFORMS = [
-  { id: 'boards', name: 'Company career boards', status: 'Connected', note: 'Greenhouse, Lever, Ashby and SmartRecruiters publish each company’s open roles through a public API. Searched live from your browser; every job links to the employer’s own application page.' },
+  { id: 'boards', name: 'Company career pages', status: 'Connected', note: 'Greenhouse, Lever, Ashby and SmartRecruiters publish each company’s open roles through a public API. Searched live from your browser; every job links to the employer’s own application page.' },
   { id: 'remote', name: 'Remotive and Remote OK', status: 'Connected', note: 'Public remote-job APIs. Only roles open to India or worldwide are kept; each links back to the original listing.' },
   { id: 'adzuna', name: 'Adzuna', status: 'Limited', note: 'India-wide search through the scheduled server job. Needs your free Adzuna key in GitHub secrets (README).' },
   { id: 'linkedin', name: 'LinkedIn', status: 'Manual', note: 'LinkedIn prohibits unauthorized scraping and automated applications. Open the search, then import jobs by link and description.' },
@@ -1545,7 +1576,7 @@ async function tailorResume(job, { forceLocal = false } = {}) {
   const v = { id: uid('v'), jobId: job.id, resumeId: (latestResume() || {}).id || null, version: versionNo, createdAt: nowISO(), engine, content: t, coverage: pct(covered.length, kws.length), keywordsCovered: covered, keywordsMissing: kws.filter(k => !covered.includes(k)), title: `${p.name || 'Resume'} — ${job.company} ${job.title}` };
   v.hash = await sha256(text);
   S.versions[v.id] = v; save.version(v);
-  logAgent('Resume Optimization Agent', 'Generated tailored resume v' + versionNo, `${job.title} @ ${job.company}; ATS coverage ${v.coverage}%; guard removed ${t.guard.length} item(s)`, engine);
+  logAgent('Resume Optimization Agent', 'Generated tailored resume v' + versionNo, `${job.title} @ ${job.company}; keyword match ${v.coverage}%; fact check removed ${t.guard.length} item(s)`, engine);
   return v;
 }
 function latestResume() { return Object.values(S.resumes).sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt))[0] || null; }
@@ -1697,7 +1728,7 @@ function answerFromProfile(key, p, job, v) {
     case 'portfolio': return [p.github || p.portfolio, 'Profile › Contact'];
     case 'totalExp': return [String(y), y ? 'Profile › Experience' : 'Profile › Experience (no full-time roles)'];
     case 'currentCtc': return [p.currentCtc ? lpa(+p.currentCtc) : (y < 1 && !(p.experiences || []).some(e => !isIntern(e)) ? 'Not applicable (fresher)' : ''), p.currentCtc ? 'Profile › Compensation' : 'Profile › Experience'];
-    case 'expectedCtc': { const a = pr.salaryMin ?? p.expectedMin, b = pr.salaryMax ?? p.expectedMax; return [(a != null || b != null) ? salaryRange(a, b) : '', 'Job preferences › Salary']; }
+    case 'expectedCtc': { const a = pr.salaryMin ?? p.expectedMin, b = pr.salaryMax ?? p.expectedMax; return [(a != null || b != null) ? salaryRange(a, b) : '', 'What job I want › Salary']; }
     case 'notice': return [p.noticePeriod || '', 'Profile › Availability'];
     case 'relocate': return [p.relocate === true ? 'Yes' : p.relocate === false ? 'No' : '', 'Profile › Availability'];
     case 'qualification': return [edu ? [edu.degree, edu.institution].filter(Boolean).join(', ') : '', 'Profile › Education'];
@@ -1890,7 +1921,7 @@ function buildReport(type) {
     '## All-time conversion', `- Shortlisting rate: **${A.shortlistRate}%** of ${A.applied} applications`, `- Rejection rate: **${A.rejectionRate}%**`, `- Interview rate: **${A.interviewRate}%**`, `- Offer conversion (offers ÷ interviews): **${A.offerRate}%**`, '',
     '## Most common missing skills', ...(A.missing.length ? A.missing.slice(0, 6).map(([s, n]) => `- ${s}: missing in ${n} job${n > 1 ? 's' : ''}`) : ['- None recorded yet']), '',
     '## Where the opportunities are', ...Object.entries(A.locs).sort((a, b) => b[1].jobs - a[1].jobs).slice(0, 5).map(([c, v]) => `- ${c}: ${v.jobs} job${v.jobs > 1 ? 's' : ''}${v.scores.length ? `, average match ${Math.round(sum(v.scores) / v.scores.length)}` : ''}${v.sal.length ? `, median pay ${lpa(v.sal.sort((a, b) => a - b)[Math.floor(v.sal.length / 2)])}` : ''}`), '',
-    '## Resume performance', `- Average ATS coverage on shortlisted applications: ${A.coverageShort ?? '—'}%`, `- Average ATS coverage on rejected applications: ${A.coverageRej ?? '—'}%`, '',
+    '## Resume performance', `- Average keyword match on shortlisted applications: ${A.coverageShort ?? '—'}%`, `- Average keyword match on rejected applications: ${A.coverageRej ?? '—'}%`, '',
     '## Recommendations', ...(A.missing[0] ? [`- Close the most frequent gap: ${A.missing.slice(0, 2).map(x => x[0]).join(' and ')}.`] : []),
     ...(A.applied < 5 ? ['- Apply to more roles: fewer than 5 applications make the rates above unreliable.'] : []),
     ...(A.awaiting ? [`- ${A.awaiting} application${A.awaiting > 1 ? 's are' : ' is'} waiting for your approval.`] : []),
@@ -2502,11 +2533,16 @@ const PAGE_HELP = {
   interviews: 'Your upcoming interviews.',
   offers: 'Job offers you have received, side by side.',
   analytics: 'A summary of your job search so far.',
-  shortlisting: 'What the jobs you shortlisted have in common.',
+  shortlisting: 'Jobs where an employer shortlisted you, and what they have in common.',
   rejections: 'What rejected applications have in common, and what to change.',
-  config: 'Your account and password, plus an optional free AI key.',
-  alerts: 'Get a message on your phone or email when new matching jobs appear.',
-  activity: 'A record of everything this site has done for you.',
+  discover: 'Add more companies to search, or bring in a job you found on another site.',
+  resumes: 'Your original resume files, and the tailored copies we make for each job.',
+  resumecheck: 'How to make your resume stronger, most important first.',
+  profile: 'Everything here was read from your resume. Fix anything that is wrong, then save.',
+  preferences: 'The job titles, cities and pay you want. Every search uses these choices.',
+  config: 'Your password, your data and an optional free AI key. You can also close your account here.',
+  alerts: 'Get a message on your phone or by email when new matching jobs appear.',
+  activity: 'A record of what this site has done for you, newest first.',
 };
 SECTIONS.forEach(s => s[3].forEach(t => { TITLES[t[0]] = s[1]; }));
 const sectionOf = view => view === 'job' ? 'jobs' : (SECTIONS.find(s => s[3].some(t => t[0] === view)) || [])[0];
@@ -2530,8 +2566,8 @@ function layout(view, title, body) {
   <div class="rail-foot">${foot}</div></aside>
   <div class="rail-shade" data-act="menu" aria-hidden="true"></div>
   <main class="main" id="main"><header class="top" id="top"><button class="icon-btn menu-btn" type="button" data-act="menu" aria-label="Open menu">${icon('menu')}</button><h1>${esc(title)}</h1><span class="sp"></span>
-  <a class="icon-btn" href="#help" aria-label="Help: how this site works" title="Help: how this site works">${icon('help')}</a><a class="icon-btn" href="#chat" aria-label="Ask AI" title="Ask AI">${icon('chat')}</a>${themeSeg()}<button class="icon-btn" type="button" data-act="notifs" aria-label="Notifications${c.unread ? `, ${c.unread} unread` : ''}" aria-expanded="${S.ui.notifOpen ? 'true' : 'false'}">${icon('bell')}${c.unread ? `<span class="dot">${c.unread}</span>` : ''}</button>${S.ui.notifOpen ? notifPanel() : ''}<div class="scroll-prog" aria-hidden="true"><i id="scroll-prog"></i></div></header>
-  <div class="content" id="content" tabindex="-1">${banners()}${view === 'job' ? '<a class="back" href="#jobs">&larr; All jobs</a>' : pageTabs(view)}${PAGE_HELP[view] ? `<p class="page-help">${PAGE_HELP[view]}</p>` : ''}${body}</div><button class="to-top" type="button" data-act="to-top" id="to-top" aria-label="Back to top" hidden>${icon('arrowUp')}</button></main></div>`;
+  <a class="icon-btn labeled" href="#help" aria-label="Help: how this site works" title="Help: how this site works">${icon('help')}<span>Help</span></a><a class="icon-btn labeled" href="#chat" aria-label="Ask AI" title="Ask AI: type a request in plain words">${icon('chat')}<span>Ask AI</span></a>${themeSeg()}<button class="icon-btn" type="button" data-act="notifs" aria-label="Notifications${c.unread ? `, ${c.unread} unread` : ''}" aria-expanded="${S.ui.notifOpen ? 'true' : 'false'}">${icon('bell')}${c.unread ? `<span class="dot">${c.unread}</span>` : ''}</button>${S.ui.notifOpen ? notifPanel() : ''}<div class="scroll-prog" aria-hidden="true"><i id="scroll-prog"></i></div></header>
+  <div class="content" id="content" tabindex="-1">${banners()}${view === 'job' ? '<a class="back" href="#jobs">&larr; All jobs</a>' : pageTabs(view)}${PAGE_HELP[view] ? `<p class="page-help">${view === 'config' && S.mode !== 'cloud' ? 'Your data and an optional free AI key.' : PAGE_HELP[view]}</p>` : ''}${body}</div><button class="to-top" type="button" data-act="to-top" id="to-top" aria-label="Back to top" hidden>${icon('arrowUp')}</button></main></div>`;
 }
 const THEMES = [['light', 'Light', 'sun'], ['dark', 'Dark', 'moon'], ['auto', 'Auto', 'auto']];
 function themeSeg() { const cur = Theme.get(); return `<div class="seg" role="group" aria-label="Theme">${THEMES.map(([k, l, ic]) => `<button type="button" data-act="theme" data-theme="${k}" aria-pressed="${cur === k}" title="${k === 'auto' ? 'Auto: follow your device setting' : l + ' theme'}" aria-label="${l} theme">${icon(ic)}</button>`).join('')}</div>`; }
@@ -2554,16 +2590,18 @@ function notifPanel() {
 /* ============ Shared fragments ============ */
 const hostOf = u => { try { return new URL(/^https?:/i.test(u) ? u : 'https://' + u).hostname; } catch (e) { return String(u).slice(0, 40); } };
 const scoreRing = (s, lg = false) => { const c = category(s || 0); const col = { good: 'var(--good)', acc: 'var(--accent)', warn: 'var(--warn)', bad: 'var(--bad)' }[c.tone]; return `<div class="score ${lg ? 'lg' : ''}" style="--v:${s || 0};--c:${col}" data-v="${s ?? '–'}" role="img" aria-label="Match score ${s}"></div>`; };
-const engineTag = e => e === 'ai' ? `<span class="engine ai" title="Produced by ${AI.name}">${AI.name}</span>` : e === 'server' ? '<span class="engine" title="Found by the scheduled server job">Server</span>' : e === 'claude' ? '<span class="engine ai">Claude</span>' : '<span class="engine" title="Produced by the in-browser rules engine">Local engine</span>';
+const engineTag = e => e === 'ai' ? `<span class="engine ai" title="Produced by ${AI.name}">${AI.name}</span>` : e === 'server' ? '<span class="engine" title="Found by the scheduled server job">Server</span>' : e === 'claude' ? '<span class="engine ai">Claude</span>' : '<span class="engine" title="Produced by the built-in engine, which runs in your browser and needs no AI key">Built-in</span>';
 const chipList = (arr, cls = '') => (arr && arr.length) ? `<div class="chips">${arr.map(s => `<span class="chip ${cls}">${esc(s)}</span>`).join('')}</div>` : '<span class="muted small">None</span>';
 const emptyState = (title, text, actions = '') => `<div class="empty"><b>${esc(title)}</b><span>${text}</span>${actions ? `<div class="row" style="justify-content:center">${actions}</div>` : ''}</div>`;
 const postedAgo = j => { const d = daysAgo(j.postedAt || ''); return d == null || isNaN(d) ? '' : d <= 0 ? 'Posted today' : d === 1 ? 'Posted yesterday' : d < 60 ? `Posted ${d} days ago` : `Posted ${Math.round(d / 30)} months ago`; };
 const closedPill = j => j.closed ? '<span class="pill bad">Closed</span>' : j.expired ? '<span class="pill bad">Deadline passed</span>' : '';
+/* What the green and red skill chips mean, said in words because colour alone should not carry it. */
+const chipLegend = () => '<p class="legend tiny muted"><span class="chip match">Green</span> a skill on your resume <span class="chip miss">Red</span> a skill the job asks for that your resume does not show</p>';
 const jobMeta = j => `<div class="meta"><span>${esc(j.company)}</span><span>${esc(j.workMode === 'remote' ? (/india/i.test(j.location || '') ? 'Remote · India' : 'Remote') : j.location || 'Location not stated')}${j.workMode && j.workMode !== 'remote' ? ' · ' + j.workMode : ''}</span>${/\d/.test(salaryRange(j.salaryMin, j.salaryMax)) ? `<span>${esc(salaryRange(j.salaryMin, j.salaryMax))}</span>` : ''}${j.expMin != null ? `<span>${esc(`${j.expMin}${j.expMax != null ? '–' + j.expMax : '+'} yrs`)}</span>` : ''}<span>${esc(SOURCE_NAME[j.source] || j.source)}</span>${postedAgo(j) ? `<span>${postedAgo(j)}</span>` : ''}</div>`;
 function jobCard(j) {
   const m = j.match || {}; const cat = category(m.score || 0);
   return `<div class="job-card ${cat.k}${isClosed(j) ? ' closed' : ''}" data-act="open-job" data-id="${j.id}" tabindex="0" role="link" aria-label="${esc(j.title)} at ${esc(j.company)}, match ${m.score ?? 'not scored'}">${scoreRing(m.score)}<div class="stack" style="gap:5px;min-width:0"><div class="row"><h3>${esc(j.title)}</h3>${j.fresh ? '<span class="pill hi">New</span>' : ''}${closedPill(j)}${j.suspicious ? '<span class="pill bad">Check listing</span>' : ''}</div>${jobMeta(j)}
-  <div class="chips">${(m.matchedRequired || []).slice(0, 5).map(s => `<span class="chip match">${esc(s)}</span>`).join('')}${(m.missingRequired || []).slice(0, 4).map(s => `<span class="chip miss">${esc(s)}</span>`).join('')}</div></div>
+  <div class="chips">${(m.matchedRequired || []).slice(0, 5).map(s => `<span class="chip match" title="On your resume">${esc(s)}</span>`).join('')}${(m.missingRequired || []).slice(0, 4).map(s => `<span class="chip miss" title="The job asks for this; your resume does not show it">${esc(s)}</span>`).join('')}</div></div>
   <div class="stack" style="align-items:flex-end;gap:6px">${['Discovered', 'Analyzed'].includes(j.stage) ? `<span class="pill nodot ${cat.tone}">${esc(cat.label)}</span>` : `${stagePill(j.stage)}<span class="tiny muted">${esc(cat.label)}</span>`}</div></div>`;
 }
 /* Search status: live progress while a search runs, otherwise what the last one found. */
@@ -2572,7 +2610,7 @@ function searchStatus() {
   if (run) return `<div class="search-run" role="status" aria-live="polite"><div class="row between small"><span id="search-label">${esc(searchLabel(run))}</span><span class="num muted" id="search-count">${run.total ? `${run.done}/${run.total}` : ''}</span></div><div class="bar prog"><i id="search-bar" style="transform:scaleX(${run.total ? Math.max(0.02, run.done / run.total) : 0.02})"></i></div></div>`;
   if (!s) return '';
   const st = s.stats;
-  return `<p class="small muted search-last">Last search ${esc(relTime(s.at))}: read ${Number(st.listed || 0).toLocaleString('en-IN')} open roles on ${st.boardsOk} company boards, kept <b>${st.added} new</b> match${st.added === 1 ? '' : 'es'}${st.closed ? ` and flagged <b>${st.closed}</b> closed` : ''}.</p>`;
+  return `<p class="small muted search-last">Last search ${esc(relTime(s.at))}: read ${Number(st.listed || 0).toLocaleString('en-IN')} open roles on ${st.boardsOk} company career pages, kept <b>${st.added} new</b> match${st.added === 1 ? '' : 'es'}${st.closed ? ` and flagged <b>${st.closed}</b> closed` : ''}.</p>`;
 }
 function searchCard() {
   const n = S.notify || DEFAULT_NOTIFY(); const p = S.prefs || {}; const last = S.meta && S.meta.search; const run = S.ui.searching; const hasPrefs = (p.titles || []).length > 0;
@@ -2581,8 +2619,8 @@ function searchCard() {
     <p class="small muted">Checks ${boards.length} company career pages${remoteOn ? ' and remote job feeds' : ''}. A role is listed only while the employer is accepting applications.</p>
     ${hasPrefs ? `<div class="row small"><span class="muted">Looking for</span>${p.titles.slice(0, 4).map(t => `<span class="chip acc">${esc(t)}</span>`).join('')}<span class="muted">in</span>${(p.locations || []).length ? p.locations.slice(0, 4).map(t => `<span class="chip">${esc(t)}</span>`).join('') : '<span class="chip">Anywhere in India</span>'}<a href="#preferences">Change</a></div>` : `<div class="banner"><span>Tell us the job titles and cities you want first, so the search knows what to keep.</span><span class="sp"></span><a class="btn sm primary" href="#preferences">Set job preferences</a></div>`}
     ${searchStatus()}
-    ${!run && last && last.stats.failed && last.stats.failed.length ? `<details class="small"><summary>${last.stats.failed.length} board${last.stats.failed.length === 1 ? '' : 's'} could not be read</summary><ul class="plain">${last.stats.failed.map(f => `<li>${esc(f.name || f.token)} (${ATS_NAME[f.ats]}): ${esc(f.error)}</li>`).join('')}</ul><p class="muted">A board that keeps failing may have moved. Remove it under Companies &amp; import, or add its new careers link.</p></details>` : ''}
-    ${!run && last && !(last.newIds || []).length ? `<p class="small">Nothing new this time.${Object.keys(S.jobs).length ? '' : ' Try broader titles or more cities in <a href="#preferences">Job preferences</a>, add companies, or import a posting you found elsewhere.'}</p>` : ''}
+    ${!run && last && last.stats.failed && last.stats.failed.length ? `<details class="small"><summary>${last.stats.failed.length} career page${last.stats.failed.length === 1 ? '' : 's'} could not be read</summary><ul class="plain">${last.stats.failed.map(f => `<li>${esc(f.name || f.token)} (${ATS_NAME[f.ats]}): ${esc(f.error)}</li>`).join('')}</ul><p class="muted">A page that keeps failing may have moved. Remove it under <a href="#discover">Add more jobs</a>, or add its new careers link.</p></details>` : ''}
+    ${!run && last && !(last.newIds || []).length ? `<p class="small">Nothing new this time.${Object.keys(S.jobs).length ? '' : ' Try broader titles or more cities in <a href="#preferences">What job I want</a>, add companies, or import a posting you found elsewhere.'}</p>` : ''}
   </section>`;
 }
 const RESUME_ACCEPT = '.pdf,.docx,.txt,.md,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain';
@@ -2591,16 +2629,16 @@ const hasProfile = () => !!(S.profile && (S.profile.name || (S.profile.skills ||
 const currentReview = () => { const r = latestResume(); return r && hasProfile() ? resumeReview(r.text, S.profile, Object.values(S.jobs)) : null; };
 /** The first thing a new visitor sees: one action, explained in plain words. */
 function startCard() {
-  return `<section class="card hero-start"><div class="stack" style="gap:6px"><span class="eyebrow">Welcome. This takes about a minute.</span><h2>Start here: upload your resume</h2><p class="prose">That is the only thing you need to do. We read it, choose the jobs that fit you, search for open positions, and tell you how to make your resume better.</p></div>
-  <label class="drop big" id="drop" for="resume-file">${icon('upload')}<b>Choose your resume file</b><span class="btn primary">Choose file</span><span class="muted small">PDF, Word (.docx) or text. You can also drag your file onto this box.</span>${resumeInput}</label>
+  return `<section class="card hero-start"><div class="stack" style="gap:6px"><h2>Start here: upload your resume</h2><p class="prose">It takes about a minute, and it is the only thing you need to do. We read your resume, choose the jobs that fit you, search for open positions, and tell you how to make your resume better.</p></div>
+  <label class="drop big" id="drop" for="resume-file">${icon('upload')}<b>Drag your resume here, or</b><span class="btn primary">Choose a file</span><span class="muted small">A PDF, Word (.docx) or text file</span>${resumeInput}</label>
   <ol class="what-next"><li><b>1</b><span>We read your skills, projects and education.</span></li><li><b>2</b><span>We search real jobs that are open now and show how well you fit each one.</span></li><li><b>3</b><span>We show what to fix in your resume. Nothing is sent to any employer without your approval.</span></li></ol>
-  <details class="small"><summary class="muted" style="cursor:pointer">I don’t have a file. Let me paste my resume text instead</summary><form novalidate class="stack" data-form="paste-resume" style="margin-top:8px"><textarea name="text" id="paste-resume" aria-label="Resume text" rows="6" placeholder="Paste the full text of your resume here"></textarea><div class="row"><button class="btn primary" type="submit">Use this text</button></div></form></details>
+  <details class="small"><summary class="muted" style="cursor:pointer">No file? Paste your resume text instead</summary><form novalidate class="stack" data-form="paste-resume" style="margin-top:8px"><textarea name="text" id="paste-resume" aria-label="Resume text" rows="6" placeholder="Paste the full text of your resume here"></textarea><div class="row"><button class="btn primary" type="submit">Use this text</button></div></form></details>
   <p class="tiny muted">Your resume is private to your account. <a href="#help">How does this site work?</a></p></section>`;
 }
 function youCard() {
   const p = S.profile; const sk = (p.skills || []).filter(s => skillCat(s) !== 'Soft skill').slice(0, 10);
-  return `<section class="card you"><div class="card-h"><h2>${esc(p.name || 'Your profile')}</h2><span class="muted small">${esc([p.experienceLevel, p.location].filter(Boolean).join(' · '))}</span><span class="sp"></span><a class="btn sm" href="#profile">Check my details</a><label class="btn sm" for="resume-file">${icon('upload')}Upload a new resume</label>${resumeInput}</div>
-  ${sk.length ? `<div class="stack" style="gap:4px"><span class="small muted">Skills we found in your resume</span>${chipList(sk)}</div>` : ''}<p class="tiny muted">Something wrong? <a href="#profile">Fix it in My details</a>. Jobs are matched using this.</p></section>`;
+  return `<section class="card you"><div class="card-h"><h2>${esc(p.name || 'Your profile')}</h2><span class="muted small">${esc([p.experienceLevel, p.location].filter(Boolean).join(' · '))}</span><span class="sp"></span><a class="btn sm" href="#profile">Edit my details</a><label class="btn sm" for="resume-file">${icon('upload')}Upload a new resume</label>${resumeInput}</div>
+  ${sk.length ? `<div class="stack" style="gap:4px"><span class="small muted">Skills we found in your resume</span>${chipList(sk)}</div>` : ''}<p class="tiny muted">Jobs are matched using these skills. If something is wrong, use “Edit my details”.</p></section>`;
 }
 /** Shown when a profile exists but no job titles are chosen yet. */
 function suggestCard() {
@@ -2632,7 +2670,7 @@ const V = {};
 V.dashboard = () => {
   if (!hasProfile()) return startCard();
   const A = analytics(); const J = Object.values(S.jobs);
-  const tiles = [['Jobs found', 'Total jobs found', A.total, 'jobs'], ['Strong matches', 'Jobs scoring 70 or more', A.matching, 'jobs'], ['Applied', 'Applications submitted', A.applied, 'tracker'], ['Interviews', 'Interviews scheduled', A.interviews, 'interviews']];
+  const tiles = [['Jobs found', 'Total jobs found', A.total, 'jobs'], ['Strong matches (70+)', 'Jobs scoring 70 or more', A.matching, 'jobs'], ['Applied', 'Applications submitted', A.applied, 'tracker'], ['Interviews', 'Interviews scheduled', A.interviews, 'interviews']];
   const awaiting = J.filter(j => j.stage === 'AwaitingApproval' || j.stage === 'Approved');
   const upcoming = J.flatMap(j => ((j.app && j.app.interviews) || []).filter(iv => new Date(iv.at) > Date.now() - 3600e3).map(iv => ({ j, iv }))).sort((a, b) => a.iv.at.localeCompare(b.iv.at)).slice(0, 4);
   const top = J.filter(j => j.match && ['Analyzed', 'Shortlisted', 'ResumeGenerated'].includes(j.stage) && !isClosed(j)).sort((a, b) => b.match.score - a.match.score).slice(0, 5);
@@ -2645,16 +2683,22 @@ V.dashboard = () => {
   ${hasPrefs ? searchCard() : (run ? `<section class="card">${searchStatus()}</section>` : suggestCard())}
   ${A.total ? `<div class="stats">${tiles.map(([l, full, v, h]) => `<a class="stat" href="#${h}" aria-label="${esc(full)}: ${v}"><b class="num" data-count="${v}">${v}</b><span>${esc(l)}</span></a>`).join('')}</div>` : ''}
   ${attention.length ? `<section class="card"><div class="card-h"><h2>Needs your attention</h2><span class="sp"></span><a class="btn sm" href="#approvals">Waiting for my OK</a></div><ul class="list">${attention.join('')}</ul></section>` : ''}
-  ${A.total ? `<section class="card"><div class="card-h"><h2>Best matches</h2><span class="sp"></span><a class="btn sm" href="#jobs">All jobs</a></div>${top.length ? `<div class="stack">${top.map(jobCard).join('')}</div>` : emptyState('No open matches right now', 'Search again, or widen the titles and cities in your preferences.')}</section>` : ''}
+  ${A.total ? `<section class="card"><div class="card-h"><h2>Best matches</h2><span class="sp"></span><a class="btn sm" href="#jobs">All jobs</a></div>${top.length ? `${!A.applied ? '<p class="small muted prose">Open a job to see why it fits you. When you like one, press “Prepare application”: we tailor your resume and wait for your OK. Nothing is sent to an employer without it.</p>' : ''}<div class="stack">${chipLegend()}${top.map(jobCard).join('')}</div>` : emptyState('No open matches right now', 'Search again, or widen the job titles and cities under <a href="#preferences">What job I want</a>.')}</section>` : ''}
   ${tipsCard()}`;
 };
 
 V.chat = () => {
   const msgs = S.chat.length ? S.chat : [{ role: 'assistant', content: `I'm your career agent. Tell me what job you want in plain language, or give me a command. I prepare everything, but nothing is submitted without your approval.` }];
-  const sugg = ['Search now', 'Show only jobs with compatibility above 80%', 'Customize my resume for my top job', 'Prepare applications for my top 10 jobs', 'Show me which applications are awaiting approval', 'Analyze why I am getting rejected', 'Identify the most common missing technical skills', 'Prepare me for my upcoming interview', 'Compare the salary and benefits of my offers'];
+  // Only suggest what can work today: a new account has no applications to compare, interviews to prepare for or rejections to explain.
+  const J = Object.values(S.jobs);
+  const sugg = ['Search now', 'Show only jobs with compatibility above 80%', 'Customize my resume for my top job', 'Prepare applications for my top 10 jobs', 'Identify the most common missing technical skills']
+    .concat(J.some(j => ['AwaitingApproval', 'Approved'].includes(j.stage)) ? ['Show me which applications are awaiting approval'] : [])
+    .concat(J.some(j => j.stage === 'EmployerRejected') ? ['Analyze why I am getting rejected'] : [])
+    .concat(J.some(j => ((j.app && j.app.interviews) || []).some(iv => new Date(iv.at) > Date.now())) ? ['Prepare me for my upcoming interview'] : [])
+    .concat(J.filter(j => reached(j, 'OfferReceived')).length > 1 ? ['Compare the salary and benefits of my offers'] : []);
   return `<div class="card" style="gap:14px"><div class="card-h"><h2>Conversation</h2><span class="sp"></span>${AI.available() && S.settings.cloudPublic ? engineTag('ai') : engineTag('local')}<button class="btn sm ghost" type="button" data-act="chat-clear">Clear</button></div>
   <div class="chat" id="chat-log">${msgs.map(m => `<div class="msg ${m.role === 'user' ? 'u' : 'a'}">${m.role === 'user' ? esc(m.content) : `<div class="md">${mdHTML(m.content)}</div>`}</div>`).join('')}${S.ui.chatBusy ? `<div class="msg a" id="chat-live"><span class="busy"><span class="spin"></span>Thinking…</span> <button class="btn sm" type="button" data-act="chat-stop">Stop</button></div>` : ''}</div>
-  <div class="suggest">${sugg.map(s => `<button type="button" data-act="chat-suggest" data-msg="${esc(s)}">${esc(s)}</button>`).join('')}</div>
+  <p class="small muted" style="margin:0">Try one of these, or type your own:</p><div class="suggest">${sugg.map(s => `<button type="button" data-act="chat-suggest" data-msg="${esc(s)}">${esc(s)}</button>`).join('')}</div>
   <form novalidate class="row" data-form="chat"><label for="chat-in" style="position:absolute;left:-9999px">Message</label><textarea id="chat-in" name="msg" rows="2" placeholder="Describe the job you want, or give a command such as “search now”" style="flex:1;min-height:52px"></textarea><button class="btn primary" type="submit" ${S.ui.chatBusy ? 'disabled' : ''}>Send</button></form></div>`;
 };
 
@@ -2687,11 +2731,11 @@ V.profile = () => {
 V.resumes = () => {
   const R = Object.values(S.resumes).sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt));
   const Vs = Object.values(S.versions).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-  return `<div class="card"><div class="card-h"><h2>Upload your resume</h2><p>PDF, Word or text. We read it and set everything up for you.</p></div>
-  <label class="drop" id="drop" for="resume-file"><b>Drop your resume here or choose a file</b><span class="muted small">Your original text is stored once and never changed. Uploading again lets you choose whether to add to or replace your profile.</span>${resumeInput}</label>
+  return `<div class="card"><div class="card-h"><h2>Upload your resume</h2><p>We read it and keep your details up to date.</p></div>
+  <label class="drop" id="drop" for="resume-file"><b>Drag your resume here, or</b><span class="btn primary">Choose a file</span><span class="muted small">A PDF, Word (.docx) or text file. Your original is kept unchanged. If you already have a profile, we ask whether to add to it or replace it.</span>${resumeInput}</label>
   <details><summary class="small muted" style="cursor:pointer">Or paste resume text</summary><form novalidate class="stack" data-form="paste-resume" style="margin-top:8px"><textarea name="text" id="paste-resume" aria-label="Resume text" rows="6" placeholder="Paste the full text of your resume"></textarea><div class="row"><button class="btn" type="submit">Read pasted text</button></div></form></details></div>
-  <div class="card"><div class="card-h"><h2>Your uploaded resumes</h2></div>${R.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>File</th><th>Uploaded</th><th>Type</th><th class="r">Characters</th><th></th></tr></thead><tbody>${R.map(r => `<tr><td>${esc(r.filename)}</td><td>${fmtDT(r.uploadedAt)}</td><td>${esc(r.kind.toUpperCase())}</td><td class="r num">${r.text.length.toLocaleString('en-IN')}</td><td class="r"><button class="btn sm" type="button" data-act="view-original" data-id="${r.id}">View text</button> <button class="btn sm" type="button" data-act="reparse" data-id="${r.id}">Re-extract profile</button></td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">No resume uploaded yet.</p>'}</div>
-  <div class="card"><div class="card-h"><h2>Tailored resumes</h2><p>One per job. Older versions stay available.</p></div>${Vs.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Job</th><th>Version</th><th class="r">ATS coverage</th><th>Engine</th><th>Created</th><th></th></tr></thead><tbody>${Vs.map(v => { const j = S.jobs[v.jobId]; return `<tr><td>${j ? `<a href="#job-${j.id}">${esc(j.title)} · ${esc(j.company)}</a>` : '<span class="muted">Deleted job</span>'}</td><td class="num">v${v.version}</td><td class="r num">${v.coverage}%</td><td>${engineTag(v.engine)}</td><td>${fmtDT(v.createdAt)}</td><td class="r" style="white-space:nowrap"><button class="btn sm" type="button" data-act="preview-version" data-id="${v.id}">Preview</button> <button class="btn sm" type="button" data-act="compare-version" data-id="${v.id}">Compare</button> <button class="btn sm" type="button" data-act="dl-pdf" data-id="${v.id}">PDF</button> <button class="btn sm" type="button" data-act="dl-docx" data-id="${v.id}">DOCX</button></td></tr>`; }).join('')}</tbody></table></div>` : '<p class="muted">Generate a tailored resume from any job page.</p>'}</div>`;
+  <div class="card"><div class="card-h"><h2>Your uploaded resumes</h2></div>${R.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>File</th><th>Uploaded</th><th>Type</th><th></th></tr></thead><tbody>${R.map(r => `<tr><td>${esc(r.filename)}</td><td>${fmtDT(r.uploadedAt)}</td><td>${esc(r.kind.toUpperCase())}</td><td class="r" style="white-space:nowrap"><button class="btn sm" type="button" data-act="view-original" data-id="${r.id}">View text</button> <button class="btn sm" type="button" data-act="reparse" data-id="${r.id}" title="Read this resume again and use it for My details">Use for my details</button></td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">No resume uploaded yet.</p>'}</div>
+  <div class="card"><div class="card-h"><h2>Tailored resumes</h2><p>One per job. Older versions stay available.</p></div>${Vs.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Job</th><th>Version</th><th class="r" title="The share of the job’s keywords your resume contains">Keyword match</th><th>Made by</th><th>Created</th><th></th></tr></thead><tbody>${Vs.map(v => { const j = S.jobs[v.jobId]; return `<tr><td>${j ? `<a href="#job-${j.id}">${esc(j.title)} · ${esc(j.company)}</a>` : '<span class="muted">Deleted job</span>'}</td><td class="num">v${v.version}</td><td class="r num">${v.coverage}%</td><td>${engineTag(v.engine)}</td><td>${fmtDT(v.createdAt)}</td><td class="r" style="white-space:nowrap"><button class="btn sm" type="button" data-act="preview-version" data-id="${v.id}">Preview</button> <button class="btn sm" type="button" data-act="compare-version" data-id="${v.id}">Compare</button> <button class="btn sm" type="button" data-act="dl-pdf" data-id="${v.id}">PDF</button> <button class="btn sm" type="button" data-act="dl-docx" data-id="${v.id}">DOCX</button></td></tr>`; }).join('')}</tbody></table></div>` : '<p class="muted">None yet. Open a job and press “Prepare application” to make one.</p>'}</div>`;
 };
 
 const tipItem = x => `<li class="tip ${x.level}"><div class="row"><span class="pill ${x.level === 'fix' ? 'bad' : 'warn'}">${x.level === 'fix' ? 'Fix first' : 'Improve'}</span><b>${esc(x.title)}</b></div><p class="small">${esc(x.why)}</p><p class="small"><b>How:</b> ${esc(x.how)}</p>${x.examples && x.examples.length ? `<ul class="small ex">${x.examples.map(e => `<li>“${esc(e)}”</li>`).join('')}</ul>` : ''}${x.fix && x.fix.text ? `<blockquote class="draft">${esc(x.fix.text)}</blockquote>` : ''}${x.fix || x.go ? `<div class="row">${x.fix ? `<button class="btn sm primary" type="button" data-act="${x.fix.act}" data-text="${esc(x.fix.text)}">${esc(x.fix.label)}</button>` : ''}${x.go ? `<a class="btn sm" href="#${x.go}">${esc(x.goLabel || 'Open')}</a>` : ''}</div>` : ''}</li>`;
@@ -2720,18 +2764,24 @@ V.help = () => {
     ['My resume is a scan or photo. What now?', 'We can only read text. Upload a Word or text-based PDF file, or paste the text of your resume on the Home page.'],
     ['Do I need an AI key?', 'No. Everything works without one. A free Gemini key (Settings) only adds optional AI-written wording.'],
     ['Can I use this on my phone?', 'Yes. Open the site in your phone browser and choose “Add to Home screen”.'],
+    CLOUD ? ['How do I delete my data or my account?', 'In Settings, “Delete my data” clears your resume, jobs and applications but keeps your account. “Delete account” at the bottom of that page closes your account and erases everything for good. You can download a copy of your data first.', '#config', 'Open Settings']
+      : ['How do I delete my data?', 'In Settings, “Delete my data” clears your resume, jobs and applications from this browser. You can download a copy first.', '#config', 'Open Settings'],
   ];
+  const map = [['Home', 'Your summary, the search button, your best matches and resume tips.'], ['Find jobs', 'Every job we found, and ways to add more companies or jobs.'], ['Applications', 'Jobs you are applying for, what waits for your OK, interviews and offers.'], ['My profile', 'Your resume, resume tips, your details and the job you want.'], ['Progress', 'Numbers that show how your search is going.'], ['Settings', CLOUD ? 'Your password, your data, alerts, and closing your account.' : 'Your data, alerts and an optional AI key.']];
   const words = [
     ['Match score', 'A number from 0 to 100 showing how well your resume fits a job.'],
     ['Tailored resume', 'A copy of your resume that highlights what one particular job asks for. It uses only facts from your profile.'],
-    ['ATS', 'Software that employers use to filter resumes by keywords. “ATS coverage” is the share of a job’s keywords your resume contains.'],
+    ['Keyword match', 'Employers use software (called an ATS) that filters resumes by keywords. Keyword match is the share of a job’s keywords your resume contains.'],
+    ['Shortlist', 'Keep a job on your list as one you may apply for. (On the Progress page, “Shortlisted” means an employer shortlisted you.)'],
+    ['Archive', 'Hide a job from your list. You can bring it back any time.'],
     ['Approve', 'Your “yes, this looks right”. Nothing leaves this site without it.'],
     ['LPA', 'Lakhs per annum, the yearly salary. 6 LPA means ₹6,00,000 a year.'],
     ['Career page', 'A company’s own web page listing the jobs it has open.'],
     ['Fresher', 'Someone with less than a year of full-time work experience.'],
   ];
   return `<div class="card"><h2>How this site works</h2><ol class="what-next"><li><b>1</b><span><b>Upload your resume</b> on the Home page. We read it and set up your profile for you.</span></li><li><b>2</b><span><b>See jobs for you.</b> Open <a href="#jobs">Find jobs</a>. Each job has a score and the reasons behind it.</span></li><li><b>3</b><span><b>Improve your resume.</b> <a href="#resumecheck">Resume check</a> lists what to fix, in plain words.</span></li><li><b>4</b><span><b>Apply when you are ready.</b> Open a job and press “Prepare application”. You review it, approve it, then submit on the employer’s page.</span></li></ol><div class="row"><a class="btn primary" href="#dashboard">Go to Home</a></div></div>
-  <div class="card"><h2>Common questions</h2><div class="stack">${faq.map(([q, a]) => `<details class="faq"><summary><b>${esc(q)}</b></summary><p class="small prose">${esc(a)}</p></details>`).join('')}</div></div>
+  <div class="card"><h2>Where to find things</h2><p class="small muted">The menu on the left has six sections. Help and Ask AI are at the top of every page.</p><dl class="gloss">${map.map(([w, d]) => `<div><dt>${esc(w)}</dt><dd>${esc(d)}</dd></div>`).join('')}</dl></div>
+  <div class="card"><h2>Common questions</h2><div class="stack">${faq.map(([q, a, href, linkText]) => `<details class="faq"><summary><b>${esc(q)}</b></summary><p class="small prose">${esc(a)}${href ? ` <a href="${href}">${esc(linkText)}</a>` : ''}</p></details>`).join('')}</div></div>
   <div class="card"><h2>Words used on this site</h2><dl class="gloss">${words.map(([w, d]) => `<div><dt>${esc(w)}</dt><dd>${esc(d)}</dd></div>`).join('')}</dl></div>`;
 };
 
@@ -2766,8 +2816,7 @@ V.discover = () => {
   const live = id => id === 'boards' ? (n.feeds.ats === false ? 'Off' : 'Connected') : id === 'remote' ? (remoteOn ? 'Connected' : 'Off') : id === 'adzuna' ? (/^ok/.test(src.adzuna || '') ? 'Connected' : 'Needs setup') : null;
   const tone = v => v === 'Connected' ? 'good' : v === 'Limited' || v === 'Needs setup' ? 'info' : v === 'Manual' ? 'warn' : '';
   const stale = st && st.lastRunAt && (Date.now() - new Date(st.lastRunAt)) > 3 * 3600e3;
-  return `<p class="small muted prose" style="margin:0">Matches come from the companies and feeds below. Add more companies, or import a job you found on another site.</p>
-  <section class="card"><div class="card-h"><h2>Companies searched</h2><p>${boards.length} career page${boards.length === 1 ? '' : 's'}</p><span class="sp"></span>${(n.boardsOff || []).length ? `<button class="btn sm" type="button" data-act="boards-restore">Restore ${n.boardsOff.length} removed</button>` : ''}</div>
+  return `<section class="card"><div class="card-h"><h2>Companies searched</h2><p>${boards.length} career page${boards.length === 1 ? '' : 's'}</p><span class="sp"></span>${(n.boardsOff || []).length ? `<button class="btn sm" type="button" data-act="boards-restore">Restore ${n.boardsOff.length} removed</button>` : ''}</div>
     ${boards.length ? `<div class="boards">${boards.map(b => `<span class="board"><span>${esc(b.name)}</span><span class="tiny muted">${ATS_NAME[b.ats]}</span><button type="button" class="board-x" data-act="board-remove" data-ats="${b.ats}" data-token="${esc(b.token)}" aria-label="Stop searching ${esc(b.name)}" title="Remove">${icon('x')}</button></span>`).join('')}</div>` : '<p class="muted">No companies selected. Restore the suggested list or add one below.</p>'}
     <form novalidate class="row" data-form="board-add" style="align-items:flex-end"><label class="f" style="flex:2;min-width:220px"><span>Add a company’s careers link</span><input type="text" name="board" id="bd-in" inputmode="url" autocomplete="off" placeholder="https://jobs.lever.co/company"></label><label class="f" style="min-width:160px"><span>System</span><select name="ats" id="bd-ats"><option value="">Detect from the link</option>${Object.entries(ATS_NAME).map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select></label><button class="btn" type="submit">Check and add</button></form>
     <p class="tiny muted">Works with careers pages on Greenhouse, Lever, Ashby or SmartRecruiters. The suggested companies were checked on 10 Nov 2026.</p>
@@ -2781,11 +2830,11 @@ V.discover = () => {
   <label class="f"><span>Job link</span><input type="text" inputmode="url" name="url" id="ij-url" placeholder="https://"></label>
   <label class="f"><span>Job description (copy everything from the posting)</span><textarea name="text" id="ij-text" rows="8" placeholder="Title, company, location, requirements, responsibilities, salary"></textarea></label>
   <div class="row"><button class="btn primary" type="submit">Import and score</button><span class="muted small">To import several, separate postings with a line containing only ---</span></div></form>
-  <div class="card"><div class="card-h"><h2>Search other sites</h2></div><p class="small muted">${hasPrefs ? 'Ready-made searches from your preferences. Open one, then import the postings you like.' : 'Set <a href="#preferences">job preferences</a> to tailor these searches.'}</p>
+  <div class="card"><div class="card-h"><h2>Search other sites</h2></div><p class="small muted">${hasPrefs ? 'Ready-made searches from your preferences. Open one, then import the postings you like.' : 'Fill in <a href="#preferences">What job I want</a> to tailor these searches.'}</p>
   <div class="stack">${links.map(l => `<a class="btn" style="justify-content:space-between" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer"><span>${esc(l.label)}</span>${icon('ext')}</a>`).join('')}</div></div></div>
   <details class="card more"><summary><b>Where jobs come from</b> <span class="small muted">· sites that forbid automated access are never scraped or auto-submitted</span></summary>
   <div class="tbl-wrap" style="margin-top:10px"><table class="tbl"><thead><tr><th>Source</th><th>Status</th><th>How jobs arrive</th><th class="r">Jobs here</th></tr></thead><tbody>${PLATFORMS.map(pl => { const v = live(pl.id) || pl.status; return `<tr><td><b>${esc(pl.name)}</b></td><td><span class="pill ${tone(v)}">${v}</span></td><td class="small">${esc(pl.note)}</td><td class="r num">${pl.id in jobsFrom ? jobsFrom[pl.id] : J.filter(j => j.source === pl.id).length}</td></tr>`; }).join('')}</tbody></table></div>
-  ${CLOUD ? `<p class="small"><b>Scheduled search:</b> ${st ? (stale ? `last ran ${esc(fmtDT(st.lastRunAt))}, so it is paused.` : `running; last search ${esc(relTime(st.lastDiscoveryAt || st.lastRunAt))}.`) : 'not set up yet.'} The server job repeats this search every 6 hours and alerts you about new matches. <a href="#alerts">Notification and server settings</a></p>` : ''}</details>`;
+  ${CLOUD ? `<p class="small" style="margin-top:12px"><b>Scheduled search:</b> ${st ? (stale ? `last ran ${esc(fmtDT(st.lastRunAt))}, so it is paused.` : `running; last search ${esc(relTime(st.lastDiscoveryAt || st.lastRunAt))}.`) : 'not set up yet.'} The server job repeats this search every 6 hours and alerts you about new matches. <a href="#alerts">Notification and server settings</a></p>` : ''}</details>`;
 };
 
 V.jobs = () => {
@@ -2803,25 +2852,25 @@ V.jobs = () => {
   <label class="f"><span>Show</span><select name="status" id="jf-status"><option value="open" ${f.status === 'open' ? 'selected' : ''}>Open to apply or in progress</option><option value="all" ${f.status === 'all' ? 'selected' : ''}>Everything</option><option value="closed" ${f.status === 'closed' ? 'selected' : ''}>Closed by the employer</option>${Object.entries(STAGES).map(([k, s]) => `<option value="${k}" ${f.status === k ? 'selected' : ''}>${s.label}</option>`).join('')}</select></label>
   <label class="f"><span>Sort by</span><select name="sort" id="jf-sort"><option value="score">Best match</option><option value="recent" ${f.sort === 'recent' ? 'selected' : ''}>Newest</option><option value="salary" ${f.sort === 'salary' ? 'selected' : ''}>Highest salary</option></select></label>
   <div class="f"><span>&nbsp;</span><button class="btn" type="submit">Apply</button></div></div></form></details>
-  <div class="row between"><span class="muted small">${J.length} job${J.length === 1 ? '' : 's'}</span><button class="btn sm ghost" type="button" data-act="rescore" title="Score every job again with your latest profile and preferences">Re-score all</button></div>
-  ${J.length ? `<div class="stack">${J.map(jobCard).join('')}</div>` : all ? emptyState('No jobs match these filters', 'Lower the minimum match, clear the search box, or switch “Show” to “Everything”.') : emptyState('No jobs yet', 'Press “Search now” above to find open roles, or import a posting you found yourself.', '<a class="btn" href="#discover">Import a job</a>')}`;
+  <div class="row between"><span class="muted small">${J.length} job${J.length === 1 ? '' : 's'}</span><button class="btn sm ghost" type="button" data-act="rescore" title="Work out every score again, using your latest details and job choices">Refresh scores</button></div>
+  ${J.length ? `<div class="stack">${chipLegend()}${J.map(jobCard).join('')}</div>` : all ? emptyState('No jobs match these filters', 'Lower the minimum match, clear the search box, or switch “Show” to “Everything”.') : emptyState('No jobs yet', 'Press “Search now” above to find open roles, or import a posting you found yourself.', '<a class="btn" href="#discover">Import a job</a>')}`;
 };
 
 V.job = id => {
   const j = S.jobs[id]; if (!j) return `<div class="card">${emptyState('Job not found', 'It may have been deleted.', '<a class="btn" href="#jobs">Back to jobs</a>')}</div>`;
   const m = j.match || {}; const tab = S.ui.tab[id] || 'match'; const v = S.versions[j.app && j.app.versionId];
   const actions = [];
-  if (['Discovered', 'Analyzed'].includes(j.stage)) actions.push(`<button class="btn primary" type="button" data-act="run-workflow" data-id="${j.id}" ${isClosed(j) ? 'disabled' : ''}>${icon('bolt')}Prepare application</button>`, `<button class="btn" type="button" data-act="stage" data-id="${j.id}" data-to="Shortlisted">Shortlist</button>`);
+  if (['Discovered', 'Analyzed'].includes(j.stage)) actions.push(`<button class="btn primary" type="button" data-act="run-workflow" data-id="${j.id}" ${isClosed(j) ? 'disabled' : ''}>${icon('bolt')}Prepare application</button>`, `<button class="btn" type="button" data-act="stage" data-id="${j.id}" data-to="Shortlisted" title="Keep this job on your list as one you may apply for">Shortlist</button>`);
   if (j.stage === 'Shortlisted') actions.push(`<button class="btn primary" type="button" data-act="tailor" data-id="${j.id}">Generate tailored resume</button>`);
   if (j.stage === 'ResumeGenerated') actions.push(`<button class="btn primary" type="button" data-act="prepare" data-id="${j.id}">Prepare application</button>`, `<button class="btn" type="button" data-act="tailor" data-id="${j.id}">Regenerate resume</button>`);
   if (j.stage === 'AwaitingApproval') actions.push(`<a class="btn primary" href="#approvals">Review and approve</a>`);
   if (j.stage === 'Approved') actions.push(`<button class="btn primary" type="button" data-act="submit" data-id="${j.id}">Submit application</button>`);
   if (j.stage === 'SubmissionInProgress') actions.push(`<button class="btn primary" type="button" data-act="submit" data-id="${j.id}">Record submission result</button>`);
   if (EMPLOYER_STAGES.includes(j.stage) || j.stage === 'Applied') { if ((STAGES[j.stage].next || []).length) actions.push(`<button class="btn primary" type="button" data-act="status" data-id="${j.id}">Update status</button>`); }
-  if (['Discovered', 'Analyzed', 'Shortlisted', 'ResumeGenerated', 'RejectedByUser'].includes(j.stage)) actions.push(`<button class="btn" type="button" data-act="stage" data-id="${j.id}" data-to="Archived">Archive</button>`);
+  if (['Discovered', 'Analyzed', 'Shortlisted', 'ResumeGenerated', 'RejectedByUser'].includes(j.stage)) actions.push(`<button class="btn" type="button" data-act="stage" data-id="${j.id}" data-to="Archived" title="Hide this job from your list. You can bring it back later">Archive</button>`);
   if (j.stage === 'Archived') actions.push(`<button class="btn" type="button" data-act="stage" data-id="${j.id}" data-to="Analyzed">Restore</button>`);
   if (j.stage === 'RejectedByUser') actions.push(`<button class="btn" type="button" data-act="stage" data-id="${j.id}" data-to="AwaitingApproval">Reconsider</button>`);
-  const tabs = [['match', 'Why it matches'], ['description', 'Job details'], ['resume', 'Tailored resume'], ['application', 'Application'], ['timeline', 'History'], ['insights', 'Outcome']];
+  const tabs = [['match', 'Why it matches'], ['description', 'Job details'], ['resume', 'Tailored resume'], ['application', 'Application'], ['timeline', 'History'], ['insights', 'Employer reply']];
   let body = '';
   if (tab === 'match') body = matchTab(j);
   if (tab === 'resume') body = resumeTab(j, v);
@@ -2831,7 +2880,8 @@ V.job = id => {
   if (tab === 'description') body = descTab(j);
   return `<div class="card"><div class="row" style="gap:16px;align-items:flex-start">${scoreRing(m.score, true)}<div class="stack" style="gap:6px;flex:1;min-width:220px"><div class="row"><h2 style="font-size:21px">${esc(j.title)}</h2>${['Discovered', 'Analyzed'].includes(j.stage) ? '' : stagePill(j.stage)}${closedPill(j)}</div>${jobMeta(j)}
   <div class="row small"><span class="pill ${category(m.score || 0).tone}">${esc(m.category || 'Not scored')}</span>${j.applyUrl ? `<a href="${esc(j.applyUrl)}" target="_blank" rel="noopener noreferrer">Official posting ${icon('ext', 'style="width:12px;height:12px;vertical-align:-1px"')}</a>` : '<span class="muted">No application URL</span>'}${j.deadline ? `<span class="muted">Apply by ${fmtDate(j.deadline)}</span>` : ''}${ATS_NAME[j.source] && !j.closed ? `<span class="muted">${j.verifiedOpenAt ? `Listed as open ${esc(relTime(j.verifiedOpenAt))}` : 'Not checked yet'}</span><button class="btn sm ghost" type="button" data-act="verify-open" data-id="${j.id}">${icon('refresh')}Check now</button>` : ''}</div></div>
-  <div class="row">${actions.join('')}<button class="btn ghost danger" type="button" data-act="delete-job" data-id="${j.id}">Delete</button></div></div>
+  <div class="row">${actions.join('')}<button class="btn ghost danger" type="button" data-act="delete-job" data-id="${j.id}" title="Remove this job for good">Delete</button></div></div>
+  ${['Discovered', 'Analyzed'].includes(j.stage) && !isClosed(j) ? '<p class="small muted prose">“Prepare application” tailors your resume to this job and fills in the form answers for you to check. Nothing is sent to the employer until you approve it.</p>' : ''}
   ${j.closed ? `<div class="banner bad"><span><b>This role has closed.</b> ${esc(j.company)} no longer lists it${j.closedAt ? ` (checked ${esc(fmtDT(j.closedAt))})` : ''}, so it was probably filled or withdrawn.</span><span class="sp"></span>${ATS_NAME[j.source] ? `<button class="btn sm" type="button" data-act="verify-open" data-id="${j.id}">Check again</button>` : ''}<button class="btn sm" type="button" data-act="mark-open" data-id="${j.id}">It is still open</button></div>` : j.expired ? `<div class="banner bad"><span><b>The deadline has passed.</b> Applications closed on ${esc(fmtDate(j.deadline))}.</span><span class="sp"></span><button class="btn sm" type="button" data-act="mark-open" data-id="${j.id}">It is still open</button></div>` : ''}
   ${j.suspicious ? `<div class="banner bad"><b>This listing looks suspicious.</b><span>${esc(j.suspiciousReason || 'Verify the employer before sharing personal details.')}</span></div>` : ''}
   ${j.snippet ? `<div class="banner info"><span>Found automatically on ${esc(SOURCE_NAME[j.source] || j.source)}, which only shares a short description. For an exact score, open the posting, copy the full description and paste it via <b>Job details → Edit</b>.</span></div>` : ''}</div>
@@ -2841,20 +2891,21 @@ function matchTab(j) {
   const m = j.match; if (!m) return `<div class="card">${emptyState('Not scored yet', 'Score this job against your profile.', `<button class="btn primary" type="button" data-act="score" data-id="${j.id}">Score now</button>`)}</div>`;
   const W = m.weights || S.settings.weights; const wsum = sum(Object.values(W).map(Number)) || 1;
   return `<div class="grid g-side"><div class="card"><div class="card-h"><h2>Score breakdown</h2>${engineTag(m.engine)}</div>
+  <p class="small muted">Each line shows how well you fit one part of the job, out of 100, and the points it adds to your total.</p>
   <div class="stack">${Object.entries(COMP_LABEL).map(([k, l]) => { const c = m.components[k]; return `<div class="comp"><span>${l} <span class="tiny muted">${Math.round(W[k] / wsum * 100)}%</span></span><div class="bar"><i style="width:${c.v}%;${c.v < 50 ? 'background:var(--bad)' : c.v < 70 ? 'background:var(--warn)' : ''}"></i></div><b class="num" style="text-align:right">${c.v}</b><span class="tiny muted num" style="text-align:right">+${Math.round(W[k] * c.v / wsum * 10) / 10}</span></div><div class="tiny muted" style="margin:-6px 0 2px">${esc(c.note)}${c.unknown ? ' · <i>missing info, scored neutral</i>' : ''}</div>`; }).join('')}</div>
   <p class="small"><b>Recommendation:</b> ${esc(m.recommendation)}</p>${m.ai ? `<div class="stripe info small"><b>AI review</b> ${engineTag('ai')}<div class="md">${mdHTML(m.ai)}</div></div>` : AI.available() ? `<div class="row"><button class="btn sm" type="button" data-act="ai-explain" data-id="${j.id}">Ask ${AI.name} for a semantic review</button><span class="tiny muted">Optional; the score itself stays deterministic.</span></div>` : '<p class="tiny muted">Add a free Gemini key in <a href="#config">Settings</a> for an optional AI review.</p>'}</div>
-  <div class="stack" style="gap:16px"><div class="card"><h3>Required skills</h3>${chipList(m.matchedRequired, 'match')}${m.missingRequired.length ? chipList(m.missingRequired, 'miss') : ''}<h3>Preferred skills</h3>${chipList(m.matchedPreferred, 'match')}${m.missingPreferred.length ? `<div class="chips">${m.missingPreferred.map(s => `<span class="chip pref">${esc(s)}</span>`).join('')}</div><p class="tiny muted">Missing preferred skills lower the score slightly but never disqualify a job.</p>` : ''}</div>
+  <div class="stack" style="gap:16px"><div class="card"><h3>Required skills</h3>${chipList(m.matchedRequired, 'match')}${m.missingRequired.length ? chipList(m.missingRequired, 'miss') : ''}${((m.matchedRequired || []).length || m.missingRequired.length) ? '<p class="tiny muted">Green skills are on your resume. Red ones are not.</p>' : ''}<h3>Preferred skills</h3>${chipList(m.matchedPreferred, 'match')}${m.missingPreferred.length ? `<div class="chips">${m.missingPreferred.map(s => `<span class="chip pref">${esc(s)}</span>`).join('')}</div><p class="tiny muted">Missing preferred skills lower the score slightly but never disqualify a job.</p>` : ''}</div>
   <div class="card"><h3>Strengths</h3>${m.strengths.length ? `<ul class="list small">${m.strengths.map(s => `<li><span class="pill good nodot">+</span><span>${esc(s)}</span></li>`).join('')}</ul>` : '<p class="muted small">None identified.</p>'}<h3>Weaknesses</h3>${m.weaknesses.length ? `<ul class="list small">${m.weaknesses.map(s => `<li><span class="pill bad nodot">−</span><span>${esc(s)}</span></li>`).join('')}</ul>` : '<p class="muted small">None identified.</p>'}${m.unknowns.length ? `<h3>Not enough information</h3><ul class="list small">${m.unknowns.map(s => `<li><span class="pill nodot">?</span><span>${esc(s)}</span></li>`).join('')}</ul>` : ''}</div>
   <div class="card"><h3>Relevant projects</h3>${m.projects.length ? hbars(m.projects.map(x => ({ label: x.name, value: x.rel, text: x.rel + '%' })), { max: 100 }) : '<p class="muted small">No projects in profile.</p>'}</div></div></div>`;
 }
 function resumeTab(j, v) {
   const all = Object.values(S.versions).filter(x => x.jobId === j.id).sort((a, b) => b.version - a.version);
-  if (!v && !all.length) return `<div class="card">${emptyState('No tailored resume yet', 'Generate an ATS-friendly resume for this job from your verified profile.', `<button class="btn primary" type="button" data-act="tailor" data-id="${j.id}">Generate tailored resume</button>`)}</div>`;
+  if (!v && !all.length) return `<div class="card">${emptyState('No tailored resume yet', 'Make a resume tailored to this job, using only facts from your profile.', `<button class="btn primary" type="button" data-act="tailor" data-id="${j.id}">Generate tailored resume</button>`)}</div>`;
   v = v || all[0];
-  return `<div class="grid g-side"><div class="card"><div class="card-h"><h2>Version ${v.version}</h2>${engineTag(v.engine)}<span class="pill ${v.coverage >= 70 ? 'good' : v.coverage >= 50 ? 'warn' : 'bad'}">ATS coverage ${v.coverage}%</span><span class="sp"></span><button class="btn sm" type="button" data-act="compare-version" data-id="${v.id}">Compare with original</button><button class="btn sm" type="button" data-act="dl-pdf" data-id="${v.id}">${icon('dl')}PDF</button><button class="btn sm" type="button" data-act="dl-docx" data-id="${v.id}">${icon('dl')}DOCX</button></div>
+  return `<div class="grid g-side"><div class="card"><div class="card-h"><h2>Version ${v.version}</h2>${engineTag(v.engine)}<span class="pill ${v.coverage >= 70 ? 'good' : v.coverage >= 50 ? 'warn' : 'bad'}" title="The share of this job’s keywords that your tailored resume contains">Keyword match ${v.coverage}%</span><span class="sp"></span><button class="btn sm" type="button" data-act="compare-version" data-id="${v.id}">Compare with original</button><button class="btn sm" type="button" data-act="dl-pdf" data-id="${v.id}">${icon('dl')}PDF</button><button class="btn sm" type="button" data-act="dl-docx" data-id="${v.id}">${icon('dl')}DOCX</button></div>
   <div class="resume-doc">${resumeHTML(v.content, S.profile || {}, v.keywordsCovered)}</div><p class="tiny muted">Highlighted terms are job keywords found in this version.</p></div>
   <div class="stack" style="gap:16px"><div class="card"><h3>What changed</h3><ul class="list small">${v.content.changeLog.map(c => `<li><span class="pill acc nodot">Δ</span><span>${esc(c)}</span></li>`).join('')}</ul></div>
-  <div class="card"><h3>Truthfulness guard</h3>${v.content.guard.length ? `<ul class="list small">${v.content.guard.map(g => `<li><span class="pill warn nodot">!</span><span>${esc(g)}</span></li>`).join('')}</ul>` : '<p class="small"><span class="pill good">Passed</span> Every skill, project, employer and date comes from your profile.</p>'}</div>
+  <div class="card"><h3>Fact check</h3>${v.content.guard.length ? `<p class="tiny muted">Left out because your profile does not support them:</p><ul class="list small">${v.content.guard.map(g => `<li><span class="pill warn nodot">!</span><span>${esc(g)}</span></li>`).join('')}</ul>` : '<p class="small"><span class="pill good">Passed</span> Every skill, project, employer and date comes from your profile.</p>'}</div>
   <div class="card"><h3>Keywords</h3><p class="tiny muted">In the resume</p>${chipList(v.keywordsCovered, 'match')}<p class="tiny muted">Not in the resume (and not added, because your profile lacks them)</p>${chipList(v.keywordsMissing, 'miss')}</div>
   ${all.length > 1 ? `<div class="card"><h3>Other versions</h3><ul class="list small">${all.filter(x => x.id !== v.id).map(x => `<li><span class="num">v${x.version}</span><span>${fmtDT(x.createdAt)} · ${x.coverage}%</span><span class="sp"></span><button class="btn sm" type="button" data-act="use-version" data-id="${j.id}" data-v="${x.id}">Use this</button></li>`).join('')}</ul></div>` : ''}
   ${['ResumeGenerated', 'Shortlisted', 'AwaitingApproval', 'Approved'].includes(j.stage) ? `<button class="btn" type="button" data-act="tailor" data-id="${j.id}">Regenerate</button>` : ''}</div></div>`;
@@ -2881,7 +2932,7 @@ function insightsTab(j) {
   if (reached(j, 'EmployerShortlisted') || reached(j, 'InterviewScheduled')) out.push(shortlistCard(j));
   if (j.stage === 'EmployerRejected') out.push(rejectionCard(j));
   if (reached(j, 'OfferReceived')) out.push(`<div class="card"><div class="card-h"><h2>Offer</h2><span class="sp"></span><a class="btn sm" href="#offers">Compare offers</a></div>${a.offer ? offerSummary(a.offer) : '<p class="muted">Add the offer details on the Offers page.</p>'}</div>`);
-  if (!out.length) out.push(`<div class="card">${emptyState('No outcome yet', 'Shortlisting and rejection analysis appear here once the employer responds. Until then, the match analysis shows likely strengths and gaps.')}</div>`);
+  if (!out.length) out.push(`<div class="card">${emptyState('No reply from the employer yet', 'When the employer shortlists, rejects or makes you an offer, record it with “Update status” and what it means for you appears here. Until then, “Why it matches” shows your likely strengths and gaps.')}</div>`);
   return out.join('');
 }
 function descTab(j) {
@@ -2929,9 +2980,10 @@ function approvalCard(j) {
   return `<div class="card" id="ap-${j.id}"><div class="row" style="align-items:flex-start;gap:14px">${scoreRing(j.match && j.match.score)}<div class="stack" style="gap:4px;flex:1;min-width:200px"><div class="row"><h2><a href="#job-${j.id}" style="color:inherit;text-decoration:none">${esc(j.title)}</a></h2>${stagePill(j.stage)}${a.savedForLater ? '<span class="pill nodot">Saved for later</span>' : ''}</div>${jobMeta(j)}</div>
   <div class="row">${editable ? `<button class="btn primary" type="button" data-act="approve" data-id="${j.id}" ${need.length ? 'disabled title="Answer every required question first"' : ''}>Approve and lock</button><button class="btn" type="button" data-act="later" data-id="${j.id}">Save for later</button><button class="btn danger" type="button" data-act="reject-app" data-id="${j.id}">Reject</button>` : ''}
   ${approved ? `<button class="btn primary" type="button" data-act="submit" data-id="${j.id}">Submit application</button><button class="btn" type="button" data-act="unapprove" data-id="${j.id}">Revoke approval</button>` : ''}${j.stage === 'SubmissionInProgress' ? `<button class="btn primary" type="button" data-act="submit" data-id="${j.id}">Record submission result</button>` : ''}${j.stage === 'SubmissionFailed' ? `<button class="btn primary" type="button" data-act="stage" data-id="${j.id}" data-to="AwaitingApproval">Re-open for approval</button>` : ''}</div></div>
-  ${approved && a.approval ? `<div class="stripe good small">Approved ${fmtDT(a.approval.approvedAt)} · expires ${fmtDT(a.approval.expiresAt)}<br><span class="hash">snapshot ${esc(a.approval.hash)}</span></div>` : ''}
-  <div class="grid g2"><div class="stack"><div class="row"><h3>Resume</h3>${v ? `<span class="pill ${v.coverage >= 70 ? 'good' : 'warn'}">v${v.version} · ATS ${v.coverage}%</span>${engineTag(v.engine)}<span class="sp"></span><button class="btn sm" type="button" data-act="preview-version" data-id="${v.id}">Preview</button>${editable || approved ? `<button class="btn sm" type="button" data-act="tailor" data-id="${j.id}">Regenerate</button>` : ''}` : '<span class="pill bad">Missing</span>'}</div>
-  ${v ? `<div class="pre" style="max-height:260px">${esc(resumeText(v.content, S.profile || {}))}</div>${v.content.guard.length ? `<p class="tiny"><span class="pill warn">Guard</span> ${v.content.guard.length} unsupported item(s) were removed.</p>` : '<p class="tiny"><span class="pill good">Guard passed</span> No unverified claims.</p>'}` : ''}
+  ${editable && need.length ? `<div class="stripe warn small"><b>Before you can approve:</b> fill in the ${need.length} answer${need.length === 1 ? '' : 's'} marked “Not in your profile”, press “Save answers”, then press “Approve and lock”.</div>` : ''}
+  ${approved && a.approval ? `<div class="stripe good small">Approved ${fmtDT(a.approval.approvedAt)} · expires ${fmtDT(a.approval.expiresAt)}<br><span class="hash">Approval code ${esc(a.approval.hash)}</span></div>` : ''}
+  <div class="grid g2"><div class="stack"><div class="row"><h3>Resume</h3>${v ? `<span class="pill ${v.coverage >= 70 ? 'good' : 'warn'}" title="Version ${v.version} of the tailored resume. Keyword match: the share of the job’s keywords it contains">v${v.version} · keywords ${v.coverage}%</span>${engineTag(v.engine)}<span class="sp"></span><button class="btn sm" type="button" data-act="preview-version" data-id="${v.id}">Preview</button>${editable || approved ? `<button class="btn sm" type="button" data-act="tailor" data-id="${j.id}">Regenerate</button>` : ''}` : '<span class="pill bad">Missing</span>'}</div>
+  ${v ? `<div class="pre" style="max-height:260px">${esc(resumeText(v.content, S.profile || {}))}</div>${v.content.guard.length ? `<p class="tiny"><span class="pill warn">Fact check</span> ${v.content.guard.length} item${v.content.guard.length === 1 ? '' : 's'} your profile does not support ${v.content.guard.length === 1 ? 'was' : 'were'} left out.</p>` : '<p class="tiny"><span class="pill good">Fact check passed</span> Everything in this resume comes from your profile.</p>'}` : ''}
   <h3>Employer</h3><p class="small">${esc(j.company)} · ${j.applyUrl ? `<a href="${esc(j.applyUrl)}" target="_blank" rel="noopener noreferrer">${esc(hostOf(j.applyUrl))}</a>` : 'No URL'} · ${esc(SOURCE_NAME[j.source] || j.source)}</p></div>
   <form novalidate class="stack" data-form="answers" data-id="${j.id}"><div class="row"><h3>Answers</h3>${need.length ? `<span class="pill warn">${need.length} need input</span>` : '<span class="pill good">All answered</span>'}</div>
   ${(a.answers || []).map(x => `<label class="f"><span>${esc(x.q)}${x.required ? ' *' : ''} <span class="tiny" style="color:${x.draft ? 'var(--warn)' : 'var(--muted)'}">${esc(x.evidence || (x.a ? 'Entered by you' : 'Not in your profile'))}</span></span>${x.key === 'cover' || x.key === 'whyUs' || x.key === 'custom' ? `<textarea name="${x.id}" id="ans-${x.id}" rows="${x.key === 'cover' ? 5 : 2}" ${editable ? '' : 'readonly'}>${esc(x.a)}</textarea>` : `<input type="text" name="${x.id}" id="ans-${x.id}" value="${esc(x.a)}" ${editable ? '' : 'readonly'} ${x.needsInput && !x.a ? 'style="border-color:var(--warn)"' : ''}>`}</label>`).join('')}
@@ -2951,9 +3003,9 @@ V.tracker = () => {
 
 V.shortlisting = () => {
   const J = Object.values(S.jobs).filter(j => reached(j, 'EmployerShortlisted') || reached(j, 'InterviewScheduled'));
-  if (!J.length) return `<div class="card">${emptyState('No employer shortlists yet', 'When an employer shortlists you, record it in the tracker and the analysis appears here.', '<a class="btn" href="#tracker">Open the tracker</a>')}</div>`;
+  if (!J.length) return `<div class="card">${emptyState('No employer shortlists yet', 'When an employer shortlists you, record it under My applications and what it means for you appears here.', '<a class="btn" href="#tracker">Open My applications</a>')}</div>`;
   const A = analytics();
-  return `<div class="card"><h2>What is working</h2><div class="grid g3"><div><b class="num" style="font:700 26px var(--f-display)">${A.shortlistRate}%</b><p class="muted small">of applications shortlisted</p></div><div><b class="num" style="font:700 26px var(--f-display)">${A.coverageShort ?? '—'}%</b><p class="muted small">average ATS coverage on shortlisted resumes</p></div><div><b style="font:650 16px var(--f-display)">${esc(A.companies.join(', ') || '—')}</b><p class="muted small">companies interested in you</p></div></div></div>` + J.map(j => `<div class="stack"><div class="row"><h3><a href="#job-${j.id}">${esc(j.title)} · ${esc(j.company)}</a></h3>${stagePill(j.stage)}</div>${shortlistCard(j)}</div>`).join('');
+  return `<div class="card"><h2>What is working</h2><div class="grid g3"><div><b class="num" style="font:700 26px var(--f-display)">${A.shortlistRate}%</b><p class="muted small">of applications shortlisted</p></div><div><b class="num" style="font:700 26px var(--f-display)">${A.coverageShort ?? '—'}%</b><p class="muted small">average keyword match on shortlisted resumes</p></div><div><b style="font:650 16px var(--f-display)">${esc(A.companies.join(', ') || '—')}</b><p class="muted small">companies interested in you</p></div></div></div>` + J.map(j => `<div class="stack"><div class="row"><h3><a href="#job-${j.id}">${esc(j.title)} · ${esc(j.company)}</a></h3>${stagePill(j.stage)}</div>${shortlistCard(j)}</div>`).join('');
 };
 V.rejections = () => {
   const J = Object.values(S.jobs).filter(j => j.stage === 'EmployerRejected');
@@ -2962,7 +3014,7 @@ V.rejections = () => {
   const byLevel = l => all.filter(r => r.level === l).length; const factors = new Map(); all.filter(r => r.level !== 'Unknown').forEach(r => { const f = r.factor.replace(/:.*$/, ''); factors.set(f, (factors.get(f) || 0) + 1); });
   return `<div class="grid g2"><div class="card"><h2>Patterns across ${J.length} rejection${J.length > 1 ? 's' : ''}</h2>${factors.size ? hbars([...factors.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6).map(([l, v]) => ({ label: l, value: v }))) : '<p class="muted small">Run the analysis on each rejection to see patterns.</p>'}
   <div class="row small"><span class="pill bad">Confirmed ${byLevel('Confirmed')}</span><span class="pill warn">Strongly supported ${byLevel('Strongly supported')}</span><span class="pill info">Possible ${byLevel('Possible')}</span></div></div>
-  <div class="card"><h2>Skills missing in rejected jobs</h2>${A.rejMissing.length ? hbars(A.rejMissing.map(([l, v]) => ({ label: l, value: v, color: 'var(--bad)' }))) : '<p class="muted small">No skill gaps recorded on rejected jobs.</p>'}<p class="tiny muted">Rejection rate ${A.rejectionRate}% · average ATS coverage on rejected resumes ${A.coverageRej ?? '—'}% vs ${A.coverageShort ?? '—'}% on shortlisted.</p></div></div>` + J.map(j => `<div class="stack"><div class="row"><h3><a href="#job-${j.id}">${esc(j.title)} · ${esc(j.company)}</a></h3>${stagePill(j.stage)}<span class="sp"></span><button class="btn sm" type="button" data-act="edit-feedback" data-id="${j.id}">Employer feedback</button></div>${rejectionCard(j)}</div>`).join('');
+  <div class="card"><h2>Skills missing in rejected jobs</h2>${A.rejMissing.length ? hbars(A.rejMissing.map(([l, v]) => ({ label: l, value: v, color: 'var(--bad)' }))) : '<p class="muted small">No skill gaps recorded on rejected jobs.</p>'}<p class="tiny muted">Rejection rate ${A.rejectionRate}% · average keyword match on rejected resumes ${A.coverageRej ?? '—'}% vs ${A.coverageShort ?? '—'}% on shortlisted.</p></div></div>` + J.map(j => `<div class="stack"><div class="row"><h3><a href="#job-${j.id}">${esc(j.title)} · ${esc(j.company)}</a></h3>${stagePill(j.stage)}<span class="sp"></span><button class="btn sm" type="button" data-act="edit-feedback" data-id="${j.id}">Employer feedback</button></div>${rejectionCard(j)}</div>`).join('');
 };
 V.interviews = () => {
   const items = Object.values(S.jobs).flatMap(j => ((j.app && j.app.interviews) || []).map(iv => ({ j, iv }))).sort((a, b) => a.iv.at.localeCompare(b.iv.at));
@@ -2977,7 +3029,7 @@ V.interviews = () => {
 };
 V.offers = () => {
   const J = Object.values(S.jobs).filter(j => reached(j, 'OfferReceived'));
-  if (!J.length) return `<div class="card">${emptyState('No offers yet', 'When you receive an offer, record it in the tracker. Then compare salary, benefits and fit here.')}</div>`;
+  if (!J.length) return `<div class="card">${emptyState('No offers yet', 'When you receive an offer, record it under My applications. Then compare salary, benefits and fit here.')}</div>`;
   const rows = J.map(j => { const o = (j.app && j.app.offer) || {}; const total = (+o.fixed || 0) + (+o.variable || 0) + (+o.joiningBonus || 0); return { j, o, total }; });
   const best = k => Math.max(...rows.map(r => k(r) || 0));
   const an = S.meta.offerAnalysis;
@@ -2987,10 +3039,11 @@ V.offers = () => {
 };
 V.analytics = () => {
   const A = analytics();
-  const tiles = [['Shortlisting rate', A.shortlistRate + '%', `${A.shortlisted} of ${A.applied} applications`], ['Rejection rate', A.rejectionRate + '%', `${A.rejected} rejected`], ['Interview rate', A.interviewRate + '%', `${A.interviews} interviewed`], ['Offer conversion', A.offerRate + '%', `${A.offers} offers from interviews`]];
+  const none = !A.applied;   // no applications yet: percentages of nothing would only read as "0%"
+  const tiles = [['Shortlisting rate', none ? '—' : A.shortlistRate + '%', none ? 'Fills in after you apply' : `${A.shortlisted} of ${A.applied} applications`], ['Rejection rate', none ? '—' : A.rejectionRate + '%', none ? 'Fills in after you apply' : `${A.rejected} rejected`], ['Interview rate', none ? '—' : A.interviewRate + '%', none ? 'Fills in after you apply' : `${A.interviews} interviewed`], ['Offer conversion', none ? '—' : A.offerRate + '%', none ? 'Fills in after you apply' : `${A.offers} offers from interviews`]];
   const locs = Object.entries(A.locs).sort((a, b) => b[1].jobs - a[1].jobs).slice(0, 8);
   const months = Object.keys(A.salMonth).sort().slice(-6);
-  return `<div class="grid g4">${tiles.map(([l, v, s]) => `<div class="card"><span class="muted small">${l}</span><b style="font:700 30px var(--f-display)" class="num">${v}</b><span class="tiny muted">${s}</span></div>`).join('')}</div>
+  return `${none ? `<div class="banner info"><span><b>These numbers fill in as you apply.</b> So far you have found ${A.total} job${A.total === 1 ? '' : 's'}${A.matching ? `, ${A.matching} of them strong matches` : ''}. Open a job and press “Prepare application” to start.</span><span class="sp"></span><a class="btn sm" href="#jobs">See my jobs</a></div>` : ''}<div class="grid g4">${tiles.map(([l, v, s]) => `<div class="card"><span class="muted small">${l}</span><b style="font:700 30px var(--f-display)" class="num">${v}</b><span class="tiny muted">${s}</span></div>`).join('')}</div>
   <div class="grid g2"><div class="card"><h2>Funnel</h2>${hbars([['Discovered', A.total], ['Matched 70+', A.matching], ['Applied', A.applied], ['Shortlisted', A.shortlisted], ['Interviewed', A.interviews], ['Offers', A.offers]].map(([l, v]) => ({ label: l, value: v })))}</div>
   <div class="card"><h2>Match score distribution</h2>${vbars(['<30', '30–49', '50–69', '70–84', '85+'].map((l, i) => ({ label: l, value: A.hist[i], color: ['var(--bad)', 'var(--bad)', 'var(--warn)', 'var(--accent)', 'var(--good)'][i] })))}</div>
   <div class="card"><h2>Most common missing skills</h2>${A.missing.length ? hbars(A.missing.map(([l, v]) => ({ label: l, value: v, text: v + ' job' + (v > 1 ? 's' : '') }))) : '<p class="muted small">No gaps recorded yet.</p>'}</div>
@@ -3000,29 +3053,39 @@ V.analytics = () => {
   <div class="card"><h2>Job categories</h2><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Category</th><th class="r">Jobs</th><th class="r">Avg match</th><th class="r">Applied</th><th class="r">Shortlisted</th></tr></thead><tbody>${Object.entries(A.cats).sort((a, b) => b[1].jobs - a[1].jobs).map(([c, v]) => `<tr><td>${esc(c)}</td><td class="r num">${v.jobs}</td><td class="r num">${v.avgScore ?? '—'}</td><td class="r num">${v.applied}</td><td class="r num">${v.shortlisted}${v.applied ? ` <span class="tiny muted">(${pct(v.shortlisted, v.applied)}%)</span>` : ''}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">No data</td></tr>'}</tbody></table></div></div>
   <div class="card"><h2>Sources</h2><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Source</th><th class="r">Jobs</th><th class="r">Applied</th><th class="r">Shortlisted</th></tr></thead><tbody>${Object.entries(A.sources).map(([s, v]) => `<tr><td>${esc(s)}</td><td class="r num">${v.jobs}</td><td class="r num">${v.applied}</td><td class="r num">${v.shortlisted}</td></tr>`).join('') || '<tr><td colspan="4" class="muted">No data</td></tr>'}</tbody></table></div></div>
   <div class="card"><h2>Salary trend (median of stated ranges)</h2>${vbars(months.map(m => { const v = A.salMonth[m].sort((a, b) => a - b); return { label: new Date(m + '-01').toLocaleDateString('en-IN', { month: 'short' }), value: lpaNum(v[Math.floor(v.length / 2)]) }; }), { fmt: v => v + 'L' })}</div>
-  <div class="card"><h2>Resume performance</h2><div class="grid g2"><div><b class="num" style="font:700 26px var(--f-display)">${A.coverageShort ?? '—'}%</b><p class="muted small">average ATS coverage, shortlisted</p></div><div><b class="num" style="font:700 26px var(--f-display)">${A.coverageRej ?? '—'}%</b><p class="muted small">average ATS coverage, rejected</p></div></div><p class="tiny muted">A large gap suggests keyword coverage matters for your target roles; a small gap points to other factors.</p></div></div></details>
+  <div class="card"><h2>Resume performance</h2><div class="grid g2"><div><b class="num" style="font:700 26px var(--f-display)">${A.coverageShort ?? '—'}%</b><p class="muted small">average keyword match, shortlisted</p></div><div><b class="num" style="font:700 26px var(--f-display)">${A.coverageRej ?? '—'}%</b><p class="muted small">average keyword match, rejected</p></div></div><p class="tiny muted">A large gap suggests keywords matter for your target roles; a small gap points to other factors.</p></div></div></details>
   <div class="card"><div class="card-h"><h2>Career reports</h2><span class="sp"></span><button class="btn sm" type="button" data-act="report" data-type="weekly">Generate weekly report</button><button class="btn sm" type="button" data-act="report" data-type="monthly">Generate monthly report</button></div>
   ${S.reports.length ? S.reports.slice(0, 6).map((r, i) => `<details ${i === 0 ? 'open' : ''} class="repeat"><summary style="cursor:pointer"><b>${r.type === 'weekly' ? 'Weekly' : 'Monthly'} report</b> <span class="tiny muted">${fmtDT(r.createdAt)}</span></summary><div class="md">${mdHTML(r.md)}</div><div class="row"><button class="btn sm" type="button" data-act="report-dl" data-id="${r.id}" data-fmt="md">Download .md</button><button class="btn sm" type="button" data-act="report-dl" data-id="${r.id}" data-fmt="docx">Download .docx</button><button class="btn sm" type="button" data-act="report-copy" data-id="${r.id}">Copy</button></div></details>`).join('') : '<p class="muted small">No reports yet.</p>'}</div>`;
 };
-V.activity = () => `<div class="card"><div class="card-h"><h2>Agent activity</h2><p>Every important action is recorded with the agent and engine that produced it.</p><span class="sp"></span><span class="muted small">${S.logs.length} entries (latest 300 kept)</span></div>
-  ${S.logs.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Time</th><th>Agent</th><th>Action</th><th>Details</th><th>Engine</th></tr></thead><tbody>${S.logs.slice(0, 200).map(l => `<tr><td class="num small" style="white-space:nowrap">${fmtDT(l.t)}</td><td class="small"><b>${esc(l.agent)}</b></td><td class="small">${esc(l.action)}</td><td class="small muted">${esc(l.detail)}</td><td>${engineTag(l.engine)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">No activity yet.</p>'}</div>`;
+V.activity = () => `<div class="card"><div class="card-h"><h2>Activity</h2><p>Each line says what happened, and whether the built-in engine or AI did it.</p><span class="sp"></span><span class="muted small">${S.logs.length} ${S.logs.length === 1 ? 'entry' : 'entries'} (the latest 300 are kept)</span></div>
+  ${S.logs.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Time</th><th>Agent</th><th>What happened</th><th>Details</th><th>Made by</th></tr></thead><tbody>${S.logs.slice(0, 200).map(l => `<tr><td class="num small" style="white-space:nowrap">${fmtDT(l.t)}</td><td class="small"><b>${esc(l.agent)}</b></td><td class="small">${esc(l.action)}</td><td class="small muted">${esc(l.detail)}</td><td>${engineTag(l.engine)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">No activity yet.</p>'}</div>`;
 V.config = () => {
   const s = S.settings; const W = s.weights; const tot = sum(Object.values(W).map(Number));
+  const cloud = S.mode === 'cloud';
   const gem = s.aiKey ? (CAP.sampleOK === false ? '<span class="pill bad">Key rejected</span>' : '<span class="pill good">Key saved</span>') : '<span class="pill">Off</span>';
-  return `${S.mode === 'cloud' ? `<div class="card"><div class="card-h"><h2>Account</h2><span class="sp"></span><button class="btn sm" type="button" data-act="signout">Sign out</button></div><p class="small">Signed in as <b>${esc(S.session.user.email)}</b>. You stay signed in on this device until you sign out, or until it goes ${IDLE_DAYS} days without being used. Your data is private to this account.</p><form novalidate class="row" data-form="change-password"><label class="f" style="flex:1;min-width:200px"><span>New password</span><input type="password" name="pw" id="cfg-pw" autocomplete="new-password" minlength="8"></label><button class="btn" type="submit" style="align-self:flex-end">Change password</button></form></div>` : ''}
-  <form novalidate class="card" data-form="settings-ai"><div class="card-h"><h2>AI assistant (optional)</h2>${gem}<span class="sp"></span><button class="btn sm primary" type="submit">Save</button></div>
-  <p class="small">Everything works without it, using the built-in engine. Add a free Google Gemini key for AI-written resumes, analyses and chat. Get one at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">aistudio.google.com/apikey</a>.</p>
+  const where = cloud ? 'Stored in your private cloud database, readable only by your account.' : S.mode === 'local' ? 'Stored in this browser only.' : 'Not stored.';
+  const counts = `${Object.keys(S.jobs).length} jobs, ${Object.keys(S.versions).length} tailored resumes and ${Object.keys(S.resumes).length} uploaded resume(s)`;
+  return `${cloud ? `<div class="card"><div class="card-h"><h2>Account</h2><span class="sp"></span><button class="btn sm" type="button" data-act="signout">Sign out</button></div><p class="small">Signed in as <b>${esc(S.session.user.email)}</b>. You stay signed in on this device until you sign out, or until it goes ${IDLE_DAYS} days without being used.</p><form novalidate class="row" data-form="change-password"><label class="f" style="flex:1;min-width:200px"><span id="lbl-cfg-pw">New password (8+ characters)</span><span class="pw"><input type="password" name="pw" id="cfg-pw" aria-labelledby="lbl-cfg-pw" autocomplete="new-password" minlength="8"><button type="button" class="pw-toggle" aria-label="Show password" title="Show password">Show</button></span></label><button class="btn" type="submit" style="align-self:flex-end">Change password</button></form></div>` : ''}
+  <div class="card"><h2>Your data</h2><p class="small">${where} You have ${counts}.</p>
+  <div class="row"><button class="btn" type="button" data-act="export">Download my data (JSON)</button><button class="btn danger" type="button" data-act="delete-all">Delete my data</button></div>
+  <p class="tiny muted">${cloud ? 'Delete my data clears your resume, jobs and applications but keeps your account, so you can start again.' : 'Delete my data clears your resume, jobs and applications from this browser.'}</p></div>
+  <details class="card more" id="ai-card" ${s.aiKey ? 'open' : ''}><summary><b>AI assistant (optional)</b> ${gem} <span class="small muted">· everything works without it</span></summary>
+  <form novalidate class="stack" data-form="settings-ai" style="margin-top:12px"><p class="small">Add a free Google Gemini key for AI-written resumes, analyses and chat. Without one, the built-in engine does everything. Get a key at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">aistudio.google.com/apikey</a>.</p>
   <div class="fgrid"><label class="f"><span>Gemini API key</span><input type="password" name="aiKey" id="cfg-aikey" value="${esc(s.aiKey || '')}" autocomplete="off" placeholder="AIza…"></label><label class="f"><span>Model</span><input type="text" name="aiModel" id="cfg-aimodel" value="${esc(s.aiModel || 'gemini-2.5-flash')}"></label></div>
   <label class="check"><input type="checkbox" name="cloudPublic" id="cfg-public" ${s.cloudPublic ? 'checked' : ''}>Use Gemini (job descriptions, search requests and, if allowed below, your profile)</label>
   <label class="f"><span>Personal data (resume, profile, answers)</span><select name="cloudPersonal" id="cfg-personal"><option value="ask" ${s.cloudPersonal === 'ask' ? 'selected' : ''}>Ask me the first time</option><option value="allow" ${s.cloudPersonal === 'allow' ? 'selected' : ''}>Allow Gemini</option><option value="deny" ${s.cloudPersonal === 'deny' ? 'selected' : ''}>Built-in engine only</option></select></label>
   <p class="tiny muted">On Google’s free tier, prompts may be used to improve Google’s products. The key is stored in your private settings and sent only to Google.</p>
-  <details class="more"><summary>Approval and shortlisting rules</summary><div class="fgrid" style="margin-top:10px"><label class="f"><span>Approval expires after (days)</span><input type="number" min="1" max="60" name="approvalDays" id="cfg-days" value="${s.approvalDays}"></label><label class="f"><span>Auto-shortlist when the agent runs batches (min score)</span><input type="number" min="0" max="100" name="autoShortlist" id="cfg-auto" value="${s.autoShortlist}"></label></div></details></form>
+  <div class="row"><button class="btn primary" type="submit">Save AI settings</button></div></form></details>
+  <details class="card more"><summary><b>Approval and shortlisting rules</b> <span class="small muted">· advanced</span></summary>
+  <form novalidate class="stack" data-form="settings-rules" style="margin-top:10px"><div class="fgrid"><label class="f"><span>An approval expires after (days)</span><input type="number" min="1" max="60" name="approvalDays" id="cfg-days" value="${s.approvalDays}"></label><label class="f"><span>Lowest score when Ask AI prepares several applications at once</span><input type="number" min="0" max="100" name="autoShortlist" id="cfg-auto" value="${s.autoShortlist}"></label></div><div class="row"><button class="btn primary" type="submit">Save rules</button></div></form></details>
   <details class="card more"><summary><b>How matches are scored</b> <span class="small muted">· advanced</span></summary>
   <form novalidate class="stack" data-form="settings-weights" style="margin-top:10px"><div class="row"><span class="small muted">Weights are normalised if they do not add up to 100.</span><span class="sp"></span><span class="pill ${tot === 100 ? 'good' : 'warn'}" id="w-total">Total ${tot}%</span><button class="btn sm" type="button" data-act="weights-reset">Reset</button><button class="btn sm primary" type="submit">Save and re-score</button></div>
   <div class="stack">${Object.entries(COMP_LABEL).map(([k, l]) => `<label class="comp wrow"><span>${l}</span><input type="range" min="0" max="50" step="1" name="${k}" id="w-${k}" value="${W[k]}" data-act-input="weight"><b class="num" id="wv-${k}" style="text-align:right">${W[k]}%</b></label>`).join('')}</div></form></details>
-  <div class="card"><h2>Your data</h2><p class="small">${S.mode === 'cloud' ? 'Stored in your private cloud database, readable only by your account.' : S.mode === 'local' ? 'Stored in this browser only.' : 'Not stored.'} ${Object.keys(S.jobs).length} jobs, ${Object.keys(S.versions).length} tailored resumes, ${Object.keys(S.resumes).length} uploaded resume(s).</p>
-  <div class="row"><button class="btn" type="button" data-act="export">Export all data (JSON)</button><button class="btn danger" type="button" data-act="delete-all">Delete all my data</button></div></div>
-  <details class="card more"><summary><b>How your applications are protected</b></summary><ul class="list small" style="margin-top:10px">${['Applications are never submitted without your explicit approval of a locked snapshot.', 'Tailored resumes are checked: skills, employers, dates and years not in your profile are removed.', 'Job descriptions are treated as untrusted text and cannot change the agent’s instructions.', 'CAPTCHAs, logins and platform restrictions are never bypassed; LinkedIn is not scraped.', 'An application is marked Applied only after you record a confirmation or reference number.', 'Rejections are recorded only from a recruiter response or another reliable source.'].map(t => `<li><span class="tick">${icon('check')}</span><span>${t}</span></li>`).join('')}</ul></details>`;
+  <details class="card more"><summary><b>How your applications are protected</b></summary><ul class="list small" style="margin-top:10px">${['Applications are never submitted without your explicit approval of a locked snapshot.', 'Tailored resumes are checked: skills, employers, dates and years not in your profile are removed.', 'Job descriptions are treated as untrusted text and cannot change the agent’s instructions.', 'CAPTCHAs, logins and platform restrictions are never bypassed; LinkedIn is not scraped.', 'An application is marked Applied only after you record a confirmation or reference number.', 'Rejections are recorded only from a recruiter response or another reliable source.'].map(t => `<li><span class="tick">${icon('check')}</span><span>${t}</span></li>`).join('')}</ul></details>
+  ${cloud ? `<section class="card danger-zone" aria-labelledby="dz-title"><h2 id="dz-title">Delete account</h2><p class="small">Closes your account for good and erases everything in it. You cannot undo this, and we cannot recover it afterwards.</p>
+  <ul class="plain small"><li>Your resume, profile and job choices</li><li>Every job, tailored resume and application</li><li>Your alert settings and activity history</li></ul>
+  <p class="small muted">You will be signed out on every device. You can sign up again later with the same email, but the new account starts empty.</p>
+  <div class="row"><button class="btn danger" type="button" data-act="delete-account">Delete my account…</button></div></section>` : ''}`;
 };
 /* ============ Render ============ */
 let _lastView = null;
@@ -3058,7 +3121,7 @@ async function runWorkflow(j, { local = false } = {}) {
   if (j.stage === 'Discovered') scoreAndStore(j);
   if (!j.match) j.match = scoreJob(j, S.profile, S.prefs, S.settings.weights);
   if (j.stage === 'Analyzed') moveStage(j, 'Shortlisted', { by: 'Application Agent', note: 'Selected for application', silent: true });
-  if (j.stage === 'Shortlisted') { const v = await tailorResume(j, { forceLocal: local }); j.app = j.app || {}; j.app.versionId = v.id; moveStage(j, 'ResumeGenerated', { by: 'Resume Optimization Agent', note: `v${v.version}, ATS ${v.coverage}%`, silent: true }); }
+  if (j.stage === 'Shortlisted') { const v = await tailorResume(j, { forceLocal: local }); j.app = j.app || {}; j.app.versionId = v.id; moveStage(j, 'ResumeGenerated', { by: 'Resume Optimization Agent', note: `v${v.version}, keyword match ${v.coverage}%`, silent: true }); }
   if (j.stage === 'ResumeGenerated') { await prepareApplication(j); moveStage(j, 'AwaitingApproval', { by: 'Application Agent', note: 'Stopped for your approval' }); }
   return true;
 }
@@ -3251,25 +3314,25 @@ function chatTools() {
 }
 function chatRules() {
   return `You are the AI Career Agent inside a job-search web app for a job seeker in India. Today is ${new Date().toDateString()}. Use the tools to read and change the app's data.
-Rules: Never say an application was submitted; only the user can approve and submit in the Approval Center. You cannot browse the web. Open roles come from the app's own search of public company career boards (the user runs it with the Search button or by saying "search now"); for LinkedIn, Naukri and similar sites call discovery_links and tell the user to open the links and import postings (they can paste a posting here and you call import_job). Never invent profile facts. If a preference is ambiguous, ask before saving it, and confirm before preparing more than 10 applications. Distinguish confirmed rejection reasons from inferences. Keep replies short; use markdown bullets; link app pages as [To approve](#approvals) or a job as [Title at Company](#job-ID).
+Rules: Never say an application was submitted; only the user can approve and submit in the Approval Center. You cannot browse the web. Open roles come from the app's own search of public company career boards (the user runs it with the Search button or by saying "search now"); for LinkedIn, Naukri and similar sites call discovery_links and tell the user to open the links and import postings (they can paste a posting here and you call import_job). Never invent profile facts. If a preference is ambiguous, ask before saving it, and confirm before preparing more than 10 applications. Distinguish confirmed rejection reasons from inferences. Keep replies short; use markdown bullets; link app pages as [Waiting for my OK](#approvals) or a job as [Title at Company](#job-ID).
 ${UNTRUSTED}`;
 }
 async function chatLocal(msg) {
   const t = msg.toLowerCase();
   if (S.ui.pendingPrefs && /^(no|cancel|discard)\b/.test(t)) { S.ui.pendingPrefs = null; return 'Discarded. Your saved preferences are unchanged.'; }
-  if (S.ui.pendingPrefs && /^(yes|y|confirm|ok|okay|save|correct|looks good)\b/.test(t)) { S.prefs = { ...S.ui.pendingPrefs, savedAt: nowISO() }; S.ui.pendingPrefs = null; save.prefs(); rescoreAll(); logAgent('Career Profile Agent', 'Saved preferences from chat', S.prefs.titles.join(', ')); const r = await runLiveSearch({ quiet: true }); return r ? `Saved, and I searched the open roles: **${r.fresh.length} new match${r.fresh.length === 1 ? '' : 'es'}** from ${r.stats.listed.toLocaleString('en-IN')} roles on ${r.stats.boardsOk} company boards.${r.fresh.length ? '\n' + r.fresh.slice().sort((a, b) => b.match.score - a.match.score).slice(0, 5).map(j => `- [${j.title} at ${j.company}](#job-${j.id}) · ${j.match.score}`).join('\n') + '\n\nAll of them are on [Find jobs](#jobs).' : ' Nothing new fits right now; widen the titles or cities in [Job preferences](#preferences), or add companies on [Companies & import](#discover).'}` : 'Saved. Run the search from [Companies & import](#discover).'; }
+  if (S.ui.pendingPrefs && /^(yes|y|confirm|ok|okay|save|correct|looks good)\b/.test(t)) { S.prefs = { ...S.ui.pendingPrefs, savedAt: nowISO() }; S.ui.pendingPrefs = null; save.prefs(); rescoreAll(); logAgent('Career Profile Agent', 'Saved preferences from chat', S.prefs.titles.join(', ')); const r = await runLiveSearch({ quiet: true }); return r ? `Saved, and I searched the open roles: **${r.fresh.length} new match${r.fresh.length === 1 ? '' : 'es'}** from ${r.stats.listed.toLocaleString('en-IN')} roles on ${r.stats.boardsOk} company boards.${r.fresh.length ? '\n' + r.fresh.slice().sort((a, b) => b.match.score - a.match.score).slice(0, 5).map(j => `- [${j.title} at ${j.company}](#job-${j.id}) · ${j.match.score}`).join('\n') + '\n\nAll of them are on [Find jobs](#jobs).' : ' Nothing new fits right now; widen the titles or cities in [What job I want](#preferences), or add companies on [Add more jobs](#discover).'}` : 'Saved. Run the search from [Add more jobs](#discover).'; }
   if (/^(search|find|check|look)( for)?( the| new| more| open)* (jobs|roles|openings)( now| again)?[.!]?$/.test(t.trim()) || /\b(search|refresh|check) (now|again|for new jobs)\b/.test(t)) {
-    const r = await runLiveSearch({ quiet: true }); if (!r) return 'Set your job preferences first, then I can search.';
+    const r = await runLiveSearch({ quiet: true }); if (!r) return 'Tell me which job titles and cities you want first (My profile, then What job I want), then I can search.';
     return `Searched ${r.stats.boardsOk} company boards (${r.stats.listed.toLocaleString('en-IN')} open roles): **${r.fresh.length} new match${r.fresh.length === 1 ? '' : 'es'}**${r.closed.length ? `, and ${r.closed.length} saved role${r.closed.length === 1 ? ' has' : 's have'} closed` : ''}. See [Find jobs](#jobs).`;
   }
   let m = t.match(/(?:above|over|more than|at least|>\s*)\s*(\d{2})\s*%?/);
-  if (m && /compat|score|match|jobs?/.test(t)) { const n = +m[1]; S.ui.filter.minScore = n; S.ui.filter.status = 'open'; const J = openJobs().filter(j => j.match && j.match.score >= n).sort((a, b) => b.match.score - a.match.score); return J.length ? `**${J.length} open job${J.length > 1 ? 's' : ''} at ${n}% or above:**\n${J.slice(0, 10).map(j => `- [${j.title} at ${j.company}](#job-${j.id}) — ${j.match.score}`).join('\n')}\n\nThe [Find jobs](#jobs) page is filtered the same way.` : `No open jobs score ${n} or above yet. Import more from [Companies & import](#discover).`; }
+  if (m && /compat|score|match|jobs?/.test(t)) { const n = +m[1]; S.ui.filter.minScore = n; S.ui.filter.status = 'open'; const J = openJobs().filter(j => j.match && j.match.score >= n).sort((a, b) => b.match.score - a.match.score); return J.length ? `**${J.length} open job${J.length > 1 ? 's' : ''} at ${n}% or above:**\n${J.slice(0, 10).map(j => `- [${j.title} at ${j.company}](#job-${j.id}) — ${j.match.score}`).join('\n')}\n\nThe [Find jobs](#jobs) page is filtered the same way.` : `No open jobs score ${n} or above yet. Import more from [Add more jobs](#discover).`; }
   m = t.match(/prepare (?:the )?applications? for (?:my )?top (\d+)/) || t.match(/top (\d+) jobs/);
-  if (m && /prepar|apply/.test(t)) { if (!ensureProfile()) return 'Add your profile first.'; const n = clamp(+m[1], 1, 20); const done = await Busy.local(`Preparing ${n} applications…`, () => batchPrepare(topOpenForPrep(n))); return done.length ? `Prepared ${done.length} application${done.length > 1 ? 's' : ''} and stopped for your approval:\n${done.map(d => `- [${d.title} at ${d.company}](${d.link}) — score ${d.score}${d.needsInput ? `, ${d.needsInput} answer(s) need you` : ''}`).join('\n')}\n\n${done.length < n ? `Only jobs scoring ${S.settings.autoShortlist}+ are included; change the threshold in [Settings](#config). ` : ''}Nothing has been sent. Review them in the [To approve](#approvals).` : `No open jobs score ${S.settings.autoShortlist}+ yet. Import more on [Companies & import](#discover) or lower the threshold in [Settings](#config).`; }
-  if (/awaiting approval|waiting for (my )?approval|pending approval/.test(t)) { const J = Object.values(S.jobs).filter(j => ['AwaitingApproval', 'Approved'].includes(j.stage)); return J.length ? `**${J.length} waiting on you:**\n${J.map(j => `- [${j.title} at ${j.company}](#job-${j.id}) — ${STAGES[j.stage].label}${(j.app.answers || []).some(a => a.needsInput && !a.a) ? ' (answers need input)' : ''}`).join('\n')}\n\nOpen the [To approve](#approvals).` : 'Nothing is awaiting approval.'; }
+  if (m && /prepar|apply/.test(t)) { if (!ensureProfile()) return 'Add your profile first.'; const n = clamp(+m[1], 1, 20); const done = await Busy.local(`Preparing ${n} applications…`, () => batchPrepare(topOpenForPrep(n))); return done.length ? `Prepared ${done.length} application${done.length > 1 ? 's' : ''} and stopped for your approval:\n${done.map(d => `- [${d.title} at ${d.company}](${d.link}) — score ${d.score}${d.needsInput ? `, ${d.needsInput} answer(s) need you` : ''}`).join('\n')}\n\n${done.length < n ? `Only jobs scoring ${S.settings.autoShortlist}+ are included; change the threshold in [Settings](#config). ` : ''}Nothing has been sent. Review them in the [Waiting for my OK](#approvals).` : `No open jobs score ${S.settings.autoShortlist}+ yet. Import more on [Add more jobs](#discover) or lower the threshold in [Settings](#config).`; }
+  if (/awaiting approval|waiting for (my )?approval|pending approval/.test(t)) { const J = Object.values(S.jobs).filter(j => ['AwaitingApproval', 'Approved'].includes(j.stage)); return J.length ? `**${J.length} waiting on you:**\n${J.map(j => `- [${j.title} at ${j.company}](#job-${j.id}) — ${STAGES[j.stage].label}${(j.app.answers || []).some(a => a.needsInput && !a.a) ? ' (answers need input)' : ''}`).join('\n')}\n\nOpen the [Waiting for my OK](#approvals).` : 'Nothing is awaiting approval.'; }
   if (/missing (technical )?skills|skill gaps?|common gaps?/.test(t)) { const A = analytics(); return A.missing.length ? `**Most common missing required skills:**\n${A.missing.slice(0, 8).map(([s, n]) => `- ${s} — ${n} job${n > 1 ? 's' : ''}`).join('\n')}${A.rejMissing.length ? `\n\nAmong rejections: ${A.rejMissing.map(([s, n]) => `${s} (${n})`).join(', ')}.` : ''}\n\nSee [Insights](#analytics).` : 'No gaps recorded yet. Import and score some jobs first.'; }
   if (/reject/.test(t) && /why|analy|reason/.test(t)) { const J = Object.values(S.jobs).filter(j => j.stage === 'EmployerRejected'); if (!J.length) return 'No rejections are recorded. Rejections are only logged from a recruiter response or another reliable source.'; const lines = J.map(j => { const r = (j.app.rejectionAnalysis && j.app.rejectionAnalysis.report) || rejectionLocal(j); const c = r.reasons.filter(x => x.level === 'Confirmed'), s = r.reasons.filter(x => x.level === 'Strongly supported'); return `- [${j.company}](#job-${j.id}): ${c.length ? 'confirmed — ' + c.map(x => x.factor).join('; ') : 'no employer reason'}${s.length ? '; strongly supported — ' + s.map(x => x.factor).join('; ') : ''}`; }); return `**Rejections (${J.length}):**\n${lines.join('\n')}\n\nAnything not marked confirmed is an inference. Details on [Rejection Analysis](#rejections).`; }
-  if (/interview/.test(t) && /prep|prepare|ready/.test(t)) { const nx = Object.values(S.jobs).flatMap(x => ((x.app && x.app.interviews) || []).map(iv => ({ x, iv }))).filter(o => new Date(o.iv.at) > Date.now()).sort((a, b) => a.iv.at.localeCompare(b.iv.at))[0]; if (!nx) return 'No upcoming interview is recorded. Add one from the [Tracker](#tracker).'; const plan = prepPlan(nx.x, Math.max(1, Math.ceil((new Date(nx.iv.at) - Date.now()) / 86400000))); return `**${nx.x.company} — ${nx.iv.type || 'Interview'} on ${fmtDT(nx.iv.at)}**\n${plan.plan.map(d => `- Day ${d.day}: ${d.focus}`).join('\n')}\n\nPractice: ${plan.questions.slice(0, 4).map(q => q.q).join(' · ')}\n\nFull plan on [Interview Prep](#interviews).`; }
+  if (/interview/.test(t) && /prep|prepare|ready/.test(t)) { const nx = Object.values(S.jobs).flatMap(x => ((x.app && x.app.interviews) || []).map(iv => ({ x, iv }))).filter(o => new Date(o.iv.at) > Date.now()).sort((a, b) => a.iv.at.localeCompare(b.iv.at))[0]; if (!nx) return 'No upcoming interview is recorded. Add one from the [My applications](#tracker).'; const plan = prepPlan(nx.x, Math.max(1, Math.ceil((new Date(nx.iv.at) - Date.now()) / 86400000))); return `**${nx.x.company} — ${nx.iv.type || 'Interview'} on ${fmtDT(nx.iv.at)}**\n${plan.plan.map(d => `- Day ${d.day}: ${d.focus}`).join('\n')}\n\nPractice: ${plan.questions.slice(0, 4).map(q => q.q).join(' · ')}\n\nFull plan on [Interview Prep](#interviews).`; }
   if (/compare/.test(t) && /offer/.test(t)) { const J = Object.values(S.jobs).filter(j => reached(j, 'OfferReceived')); if (!J.length) return 'No offers recorded yet.'; return `**Offers:**\n${J.map(j => { const o = j.app.offer || {}; const tot = (+o.fixed || 0) + (+o.variable || 0) + (+o.joiningBonus || 0); return `- [${j.company}](#job-${j.id}): fixed ${lpa(+o.fixed || null)}, first-year total ${lpa(tot || null)}, ${o.location || j.location || 'location n/a'}${o.benefits ? ' — ' + o.benefits : ''}`; }).join('\n')}\n\nSide-by-side on [Offers](#offers).`; }
   if (/customi[sz]e|tailor/.test(t) && /resume|cv/.test(t)) { if (!ensureProfile()) return 'Add your profile first.'; const named = Object.values(S.jobs).find(j => t.includes(j.company.toLowerCase())); const j = named || topOpenForPrep(1)[0]; if (!j) return 'Import a job first.'; const v = await Busy.local('Tailoring…', () => tailorResume(j, { forceLocal: true })); j.app = j.app || {}; j.app.versionId = v.id; if (j.stage === 'Analyzed') moveStage(j, 'Shortlisted', { silent: true }); if (j.stage === 'Shortlisted') moveStage(j, 'ResumeGenerated', { silent: true }); else save.job(j); return `Created resume v${v.version} for [${j.title} at ${j.company}](#job-${j.id}) with ${v.coverage}% keyword coverage.${v.keywordsMissing.length ? ` Not added because your profile lacks them: ${v.keywordsMissing.join(', ')}.` : ''}`; }
   if (/\b(find|search|looking for|i want|i need|get me)\b/.test(t) || new RegExp(ROLE_NOUN, 'i').test(t)) {
@@ -3315,7 +3378,7 @@ const REMOTE_GAP_MS = 6 * 3600e3;   // the remote job feeds ask not to be polled
 function searchLabel(run) {
   if (run.phase === 'details') return `Reading ${run.total} job description${run.total === 1 ? '' : 's'}…`;
   if (run.phase === 'remote') return 'Checking remote job feeds…';
-  return `Reading company career boards${run.board ? ' · ' + run.board.name : ''}…`;
+  return `Reading company career pages${run.board ? ' · ' + run.board.name : ''}…`;
 }
 function paintSearchProgress() {
   const run = S.ui.searching; if (!run) return;
@@ -3370,7 +3433,7 @@ ACT.menu = () => $('#rail').classList.toggle('open');
 ACT.theme = el => { const t = el.dataset.theme; S.settings.theme = t; lsSet('aca:theme', t); Theme.apply(t); save.settings(); render(); };
 ACT.notifs = () => { S.ui.notifOpen = !S.ui.notifOpen; render(); };
 ACT['notifs-read'] = () => { S.notifs.forEach(n => n.read = true); save.notifs(); Object.values(S.alerts || {}).filter(a => !a.read).forEach(a => { a.read = true; save.alert(a); }); S.ui.notifOpen = false; render(); };
-ACT['modal-bg'] = () => closeModal(false);
+ACT['modal-bg'] = () => { if (!$('.overlay-busy')) closeModal(false); };
 ACT['dlg-yes'] = () => { const i = $('#dlg-input'); closeModal(i ? i.value : true); };
 ACT['dlg-no'] = () => closeModal(false);
 ACT.skip = () => { const c = $('#content'); if (c) c.focus(); };
@@ -3442,7 +3505,7 @@ ACT.score = el => { const j = S.jobs[el.dataset.id]; scoreAndStore(j); render();
 ACT.rescore = () => { rescoreAll(); toast('All jobs re-scored.'); render(); };
 ACT['ai-explain'] = async el => {
   const j = S.jobs[el.dataset.id]; const p = S.profile || {};
-  if (!AI.available()) return toast('Add a Gemini key in Configuration first.');
+  if (!AI.available()) return toast('Add a Gemini key in Settings first.');
   if (!await AI.allowed(true)) return toast('Profile data is set to stay on the local engine.');
   try { const t = await AI.text(`Give a short semantic review of how well this candidate fits this job, beyond keyword matching: transferable experience, how the projects map to the responsibilities, and the 2-3 things to emphasise in an interview. Do not invent facts. 120 words max, markdown bullets.\n${UNTRUSTED}\nCandidate: ${JSON.stringify({ years: candidateYears(p), skills: profileSkillNames(p), projects: (p.projects || []).map(x => ({ name: x.name, tech: x.technologies, d: x.description.slice(0, 300) })), experiences: (p.experiences || []).map(e => ({ role: e.role, d: e.description.slice(0, 300) })) })}\nJob: <untrusted>${JSON.stringify({ title: j.title, required: j.requiredSkills, preferred: j.preferredSkills, responsibilities: j.responsibilities })}</untrusted>\nDeterministic score: ${j.match.score}`, { label: 'Asking ' + AI.name + '…' }); j.match.ai = t; save.job(j); logAgent('Job Matching Agent', 'Semantic review', j.title, 'ai'); render(); }
   catch (e) { if (e.code !== 'cancelled') AI.handleErr(e); }
@@ -3463,8 +3526,8 @@ ACT.tailor = async el => {
   const j = S.jobs[el.dataset.id]; if (!ensureProfile() || !ensureOpen(j)) return;
   if (j.stage === 'Analyzed' || j.stage === 'Discovered') { if (j.stage === 'Discovered') scoreAndStore(j); moveStage(j, 'Shortlisted', { silent: true }); }
   const v = await tailorResume(j); j.app = j.app || {}; j.app.versionId = v.id;
-  if (j.stage === 'Shortlisted') moveStage(j, 'ResumeGenerated', { by: 'Resume Optimization Agent', note: `v${v.version}, ATS ${v.coverage}%`, silent: true }); else { save.job(j); await invalidateIfChanged(j, 'the resume was regenerated'); }
-  S.ui.tab[j.id] = 'resume'; toast(`Resume v${v.version} ready · ATS coverage ${v.coverage}%`); render();
+  if (j.stage === 'Shortlisted') moveStage(j, 'ResumeGenerated', { by: 'Resume Optimization Agent', note: `v${v.version}, keyword match ${v.coverage}%`, silent: true }); else { save.job(j); await invalidateIfChanged(j, 'the resume was regenerated'); }
+  S.ui.tab[j.id] = 'resume'; toast(`Resume v${v.version} ready · keyword match ${v.coverage}%`); render();
 };
 ACT.prepare = async el => { const j = S.jobs[el.dataset.id]; if (!ensureOpen(j)) return; await prepareApplication(j); moveStage(j, 'AwaitingApproval', { by: 'Application Agent', note: 'Stopped for your approval' }); toast('Application prepared. Review it before anything is sent.'); go('approvals'); };
 function saveAnswersFrom(j) {
@@ -3478,7 +3541,7 @@ ACT.approve = async el => {
   if (!S.versions[j.app.versionId]) return toast('Generate a tailored resume first.', 'bad');
   const drafts = j.app.answers.filter(a => a.draft && a.a);
   const hash = await snapshotHash(j);
-  if (!await confirmDialog({ title: 'Approve this exact application?', body: `<p>${esc(j.title)} at ${esc(j.company)} with resume v${S.versions[j.app.versionId].version} and ${j.app.answers.filter(a => a.a).length} answers.</p>${drafts.length ? `<p class="small" style="color:var(--warn)">${drafts.length} answer(s) are drafts: ${drafts.map(d => esc(d.q)).join('; ')}. Approving means you have read them.</p>` : ''}<p class="hash">snapshot ${esc(hash)}</p><p class="small muted">The approval expires in ${S.settings.approvalDays} days and is cleared if anything changes.</p>`, ok: 'Approve and lock' })) return;
+  if (!await confirmDialog({ title: 'Approve this exact application?', body: `<p>${esc(j.title)} at ${esc(j.company)} with resume v${S.versions[j.app.versionId].version} and ${j.app.answers.filter(a => a.a).length} answers.</p>${drafts.length ? `<p class="small" style="color:var(--warn)">${drafts.length} answer(s) are drafts: ${drafts.map(d => esc(d.q)).join('; ')}. Approving means you have read them.</p>` : ''}<p class="small">Nothing is sent to the employer yet. After you approve, you submit it yourself on the employer’s page.</p><p class="small muted">The approval expires in ${S.settings.approvalDays} days and is cleared if anything changes.</p><p class="hash">Approval code ${esc(hash)}</p>`, ok: 'Approve and lock' })) return;
   j.app.approval = { hash, approvedAt: nowISO(), expiresAt: new Date(Date.now() + S.settings.approvalDays * 86400000).toISOString(), by: 'You' }; j.app.savedForLater = false;
   moveStage(j, 'Approved', { evidence: 'Explicit user approval', note: 'snapshot ' + hash.slice(0, 16) }); logAgent('Approval Center', 'Approved application', `${j.company}; snapshot ${hash.slice(0, 16)}…`); render();
 };
@@ -3491,10 +3554,10 @@ ACT.submit = async el => {
   if (j.stage === 'Approved') { const st = await approvalState(j); if (!st.ok) { j.app.approval = null; moveStage(j, 'AwaitingApproval', { by: 'System', note: 'Approval invalid: ' + st.why }); toast(st.why + '. Approve it again.', 'bad'); return render(); } }
   const v = S.versions[j.app.versionId];
   openModal(`<h2>Submit: ${esc(j.title)} at ${esc(j.company)}</h2>
-  <ol class="small stack" style="padding-left:18px;margin:0"><li><b>Snapshot verified.</b> <span class="hash">${esc((j.app.approval || {}).hash || '')}</span></li>
-  <li><b>Open the official application page</b> and sign in yourself. The agent never bypasses logins or CAPTCHAs.<div class="row" style="margin-top:6px">${j.applyUrl ? `<a class="btn primary" href="${esc(j.applyUrl)}" target="_blank" rel="noopener noreferrer" data-act="mark-submitting" data-id="${j.id}">${icon('ext')}Open application page</a>` : '<span class="pill bad">No URL saved for this job</span>'}${v ? `<button class="btn" type="button" data-act="dl-pdf" data-id="${v.id}">Resume PDF</button><button class="btn" type="button" data-act="dl-docx" data-id="${v.id}">Resume DOCX</button>` : ''}</div></li>
-  <li><b>Fill the form with your approved answers:</b><div class="stack" style="margin-top:6px;max-height:230px;overflow:auto">${j.app.answers.filter(a => a.a).map(a => `<div class="row" style="flex-wrap:nowrap;align-items:flex-start"><span class="tiny muted" style="min-width:150px">${esc(a.q)}</span><span class="small" style="flex:1;white-space:pre-wrap">${esc(a.a.length > 140 ? a.a.slice(0, 140) + '…' : a.a)}</span><button class="btn sm" type="button" data-act="copy-answer" data-id="${j.id}" data-q="${a.id}">Copy</button></div>`).join('')}</div></li>
-  <li><b>Record the result.</b> The application is marked Applied only with a confirmation.</li></ol>
+  <ol class="small stack" style="padding-left:18px;margin:0"><li><b>${j.stage === 'Approved' ? 'Nothing has changed since you approved it.' : 'You approved this version.'}</b> <span class="tiny muted">Approval code <span class="hash">${esc((j.app.approval || {}).hash || '')}</span></span></li>
+  <li><b>Open the employer’s application page.</b> You sign in and press their Submit button yourself; this site never does that for you.<div class="row" style="margin-top:6px">${j.applyUrl ? `<a class="btn primary" href="${esc(j.applyUrl)}" target="_blank" rel="noopener noreferrer" data-act="mark-submitting" data-id="${j.id}">${icon('ext')}Open application page</a>` : '<span class="pill bad">No URL saved for this job</span>'}${v ? `<button class="btn" type="button" data-act="dl-pdf" data-id="${v.id}">Resume PDF</button><button class="btn" type="button" data-act="dl-docx" data-id="${v.id}">Resume DOCX</button>` : ''}</div></li>
+  <li><b>Copy your approved answers into their form:</b><div class="stack" style="margin-top:6px;max-height:230px;overflow:auto">${j.app.answers.filter(a => a.a).map(a => `<div class="row" style="flex-wrap:nowrap;align-items:flex-start"><span class="tiny muted" style="min-width:150px">${esc(a.q)}</span><span class="small" style="flex:1;white-space:pre-wrap">${esc(a.a.length > 140 ? a.a.slice(0, 140) + '…' : a.a)}</span><button class="btn sm" type="button" data-act="copy-answer" data-id="${j.id}" data-q="${a.id}">Copy</button></div>`).join('')}</div></li>
+  <li><b>Come back and record what happened.</b> It is marked Applied only when you give a reference number or say what confirmation you saw.</li></ol>
   <form novalidate class="stack" data-form="submit-result" data-id="${j.id}"><div class="row"><label class="check"><input type="radio" name="ok" value="yes" checked>It was submitted</label><label class="check"><input type="radio" name="ok" value="no">It failed</label></div>
   <div class="fgrid"><label class="f"><span>Reference or application number</span><input type="text" name="ref" id="sr-ref" placeholder="e.g. APP-48213"></label><label class="f"><span>Confirmation seen</span><select name="conf" id="sr-conf"><option value="">Choose…</option><option>Confirmation page</option><option>Confirmation email</option><option>Portal shows “Applied”</option></select></label><label class="f wide"><span>Note</span><input type="text" name="note" id="sr-note" placeholder="Optional"></label></div>
   <div class="row" style="justify-content:flex-end"><button class="btn" type="button" data-act="dlg-no">Close</button><button class="btn primary" type="submit">Save result</button></div></form>`, { wide: true });
@@ -3550,12 +3613,23 @@ ACT['report-dl'] = async el => { const r = S.reports.find(x => x.id === el.datas
 ACT['report-copy'] = el => copyText(S.reports.find(x => x.id === el.dataset.id).md);
 ACT['tracker-mode'] = el => { S.ui.trackerMode = el.dataset.mode; render(); };
 ACT['weights-reset'] = () => { S.settings.weights = { ...DEFAULT_WEIGHTS }; save.settings(); rescoreAll(); toast('Weights reset to 30/20/10/15/10/10/5.'); render(); };
-ACT.export = async () => { const data = { exportedAt: nowISO(), profile: S.profile, preferences: S.prefs, settings: S.settings, jobs: Object.values(S.jobs), resumeVersions: Object.values(S.versions), originalResumes: Object.values(S.resumes), activity: S.logs, reports: S.reports }; await offerDownload(`ai-career-agent-export-${nowISO().slice(0, 10)}.json`, JSON.stringify(data, null, 2)); };
+ACT.export = async () => {
+  await Store.sync();   // the freshest copy, including whatever the server job added since you last looked
+  const alertSettings = S.notify ? { ...S.notify, pushSubs: (S.notify.pushSubs || []).map(p => ({ label: p.label, addedAt: p.at })) } : null;   // device keys are of no use to you, so they stay out
+  const data = {
+    exportedAt: nowISO(), account: (S.session && S.session.user.email) || null, profile: S.profile, preferences: S.prefs,
+    settings: { ...S.settings, aiKey: S.settings.aiKey ? '(saved on the site, not included in this file)' : '' }, alertSettings,
+    jobs: Object.values(S.jobs), resumeVersions: Object.values(S.versions), originalResumes: Object.values(S.resumes),
+    activity: S.logs, reports: S.reports, chat: S.chat, notifications: S.notifs, serverAlerts: Object.values(S.alerts || {}),
+    lastSearch: (S.meta && S.meta.search) || null, offerAnalysis: (S.meta && S.meta.offerAnalysis) || null,
+  };
+  await offerDownload(`ai-career-agent-export-${nowISO().slice(0, 10)}.json`, JSON.stringify(data, null, 2));
+};
 ACT['delete-all'] = async () => {
-  const v = await confirmDialog({ title: 'Delete all your data?', body: '<p>Your profile, original resumes, every job, resume version, application, analysis, chat and log are permanently deleted.</p>', ok: 'Delete everything', danger: true, input: { label: 'Type DELETE to confirm', placeholder: 'DELETE' } });
-  if (v !== 'DELETE') { if (v !== false) toast('Nothing deleted. Type DELETE exactly.'); return; }
+  const v = await confirmDialog({ title: 'Delete all your data?', body: `<p>Your profile, original resumes, every job, tailored resume, application, analysis, chat and activity entry are permanently deleted. This cannot be undone.</p>${S.mode === 'cloud' ? '<p class="small muted">Your account stays, so you can start again with a new resume.</p>' : ''}`, ok: 'Delete my data', cancel: 'Keep my data', danger: true, input: { label: 'To confirm, type DELETE', placeholder: 'DELETE', match: 'DELETE' } });
+  if (String(v).trim().toUpperCase() !== 'DELETE') return;
   try { await Store.deleteAll(); } catch (e) { return toast('Delete failed: ' + (e.message || e), 'bad'); }
-  const th = S.settings.theme; Store.apply({}); S.settings.theme = th; toast('All data deleted.'); go('dashboard');
+  const th = S.settings.theme; Store.apply({}); S.settings.theme = th; toast('All your data was deleted.'); go('dashboard');
 };
 
 /* ============ Forms ============ */
@@ -3595,7 +3669,8 @@ FORM['board-add'] = async f => {
 FORM['import-job'] = async f => { const created = await importJobs(f.url.value.trim(), f.text.value); if (created.length) { f.reset(); toast(`Imported ${created.length} job${created.length > 1 ? 's' : ''}.`); go(created.length === 1 ? 'job-' + created[0].id : 'jobs'); } };
 FORM['job-filter'] = f => { const fd = new FormData(f); Object.assign(S.ui.filter, { q: String(fd.get('q') || ''), minScore: +fd.get('minScore') || 0, status: String(fd.get('status')), sort: String(fd.get('sort')) }); render(); };
 FORM.answers = async f => { const j = S.jobs[f.dataset.id]; const ch = saveAnswersFrom(j); toast(ch ? 'Answers saved.' : 'No changes.'); render(); };
-FORM['settings-ai'] = f => { const fd = new FormData(f); const key = String(fd.get('aiKey') || '').trim(); if (key !== S.settings.aiKey) CAP.sampleOK = true; S.settings.aiKey = key; S.settings.aiModel = String(fd.get('aiModel') || 'gemini-2.5-flash').trim(); S.settings.cloudPublic = fd.get('cloudPublic') === 'on'; S.settings.cloudPersonal = String(fd.get('cloudPersonal')); S.settings.approvalDays = clamp(+fd.get('approvalDays') || 7, 1, 60); S.settings.autoShortlist = clamp(+fd.get('autoShortlist') || 70); save.settings(); logAgent('Model Router', 'Updated AI routing', `AI: ${S.settings.cloudPublic && S.settings.aiKey ? AI.name : 'local'}; personal: ${S.settings.cloudPersonal}`); toast('AI settings saved.'); render(); };
+FORM['settings-ai'] = f => { const fd = new FormData(f); const key = String(fd.get('aiKey') || '').trim(); if (key !== S.settings.aiKey) CAP.sampleOK = true; S.settings.aiKey = key; S.settings.aiModel = String(fd.get('aiModel') || 'gemini-2.5-flash').trim(); S.settings.cloudPublic = fd.get('cloudPublic') === 'on'; S.settings.cloudPersonal = String(fd.get('cloudPersonal')); save.settings(); logAgent('Model Router', 'Updated AI routing', `AI: ${S.settings.cloudPublic && S.settings.aiKey ? AI.name : 'local'}; personal: ${S.settings.cloudPersonal}`); toast('AI settings saved.'); render(); };
+FORM['settings-rules'] = f => { const fd = new FormData(f); S.settings.approvalDays = clamp(+fd.get('approvalDays') || 7, 1, 60); S.settings.autoShortlist = clamp(+fd.get('autoShortlist') || 70); save.settings(); logAgent('Application Agent', 'Updated approval rules', `approval expires after ${S.settings.approvalDays} days; batch minimum score ${S.settings.autoShortlist}`); toast('Rules saved.'); render(); };
 FORM['settings-weights'] = f => { const fd = new FormData(f); Object.keys(COMP_LABEL).forEach(k => S.settings.weights[k] = +fd.get(k) || 0); if (!sum(Object.values(S.settings.weights))) S.settings.weights = { ...DEFAULT_WEIGHTS }; save.settings(); rescoreAll(); toast('Weights saved. All jobs re-scored.'); render(); };
 FORM['edit-job'] = async f => {
   const j = S.jobs[f.dataset.id]; const fd = new FormData(f); const g = k => String(fd.get(k) ?? '').trim();
@@ -3612,7 +3687,7 @@ FORM['submit-result'] = f => {
   if (ok) {
     if (!ref && !conf) return toast('Enter the reference number or pick the confirmation you saw. Without proof it can’t be marked Applied.', 'bad');
     j.app.submission = { at: nowISO(), reference: ref || '(none given)', confirmation: conf, note }; moveStage(j, 'Applied', { evidence: conf || 'Reference number', note: ref ? 'Reference ' + ref : note });
-    toast('Marked as applied. The tracker follows it from here.');
+    toast('Marked as applied. You can follow it under My applications.');
   } else { j.app.approval = null; moveStage(j, 'SubmissionFailed', { note: note || 'Submission failed' }); toast('Marked as failed. Re-open it for approval when you retry.'); }
   closeModal(); render();
 };
@@ -3655,13 +3730,14 @@ document.addEventListener('submit', async e => {
   finally { if (btn && btn.isConnected) btn.disabled = false; }
 });
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && $('#modal-root').innerHTML && !Busy.ctl) closeModal(false);
+  if (e.key === 'Escape' && $('#modal-root').innerHTML && !Busy.ctl && !$('.overlay-busy')) closeModal(false);
   else if (e.key === 'Escape' && S.ui.notifOpen) { S.ui.notifOpen = false; render(); const bell = $('[data-act=notifs]'); if (bell) bell.focus(); }
   else if (e.key === 'Escape' && $('#rail') && $('#rail').classList.contains('open')) { $('#rail').classList.remove('open'); const mb = $('.menu-btn'); if (mb) mb.focus(); }
   if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.job-card[data-act], .kcard[data-act]')) { e.preventDefault(); e.target.click(); }
   if (e.key === 'Enter' && !e.shiftKey && e.target.id === 'chat-in') { e.preventDefault(); e.target.form.requestSubmit(); }
 });
 document.addEventListener('input', e => {
+  if (e.target.id === 'dlg-input' && e.target.dataset.match) { const y = $('[data-act=dlg-yes]'); if (y) y.disabled = e.target.value.trim().toUpperCase() !== e.target.dataset.match.toUpperCase(); }   // a confirmation that must be typed: the button stays off until it matches
   if (e.target.id === 'jf-min') { const o = $('#jf-min-v'); if (o) o.textContent = e.target.value; }
   if (e.target.dataset.actInput === 'weight') { const v = $('#wv-' + e.target.name); if (v) v.textContent = e.target.value + '%'; const tot = sum($$('[data-act-input="weight"]').map(i => +i.value)); const t = $('#w-total'); if (t) { t.textContent = 'Total ' + tot + '%'; t.className = 'pill ' + (tot === 100 ? 'good' : 'warn'); } }
 });
@@ -3751,7 +3827,9 @@ if (Array.isArray(CONFIG.BOARDS)) BOARD_DIRECTORY.splice(0, BOARD_DIRECTORY.leng
 const AUTH_TITLES = { signin: 'Sign in', signup: 'Create your account', magic: 'Email me a sign-in link', reset: 'Reset your password', newpass: 'Choose a new password' };
 V.auth = () => {
   const a = S.ui.auth; const m = a.mode;
-  const field = (n, l, t, ac) => `<label class="f"><span>${l}</span><input type="${t}" name="${n}" id="auth-${n}" autocomplete="${ac}" ${n === 'email' ? `value="${esc(a.email || '')}"` : ''}></label>`;
+  const field = (n, l, t, ac) => t === 'password'
+    ? `<label class="f"><span id="lbl-${n}">${l}</span><span class="pw"><input type="password" name="${n}" id="auth-${n}" aria-labelledby="lbl-${n}" autocomplete="${ac}"><button type="button" class="pw-toggle" aria-label="Show password" title="Show password">Show</button></span></label>`
+    : `<label class="f"><span>${l}</span><input type="${t}" name="${n}" id="auth-${n}" autocomplete="${ac}" ${n === 'email' ? `value="${esc(a.email || '')}"` : ''}></label>`;
   const story = [
     ['Upload your resume', 'A PDF or Word file. We read it for you, so there is nothing to type.'],
     ['We find jobs for you', `We pick the job titles that fit you and search ${BOARD_DIRECTORY.length} company career pages and remote job feeds. Only jobs that are open right now are kept.`],
@@ -3799,6 +3877,7 @@ FORM.auth = async f => {
   if (m === 'reset') r = await CAP.sb.auth.resetPasswordForEmail(email, { redirectTo: SITE_URL });
   if (m === 'newpass') r = await CAP.sb.auth.updateUser({ password: pw });
   if (r.error) { S.ui.auth.err = authErr(r.error); return render(); }
+  if (m === 'signup') lsSet(SEEN_KEY, '1');
   if (m === 'signup' && !(r.data && r.data.session)) { S.ui.auth = { mode: 'signin', email, err: '', msg: 'Check your inbox and open the confirmation link, then sign in here.' }; return render(); }
   if (m === 'magic') { S.ui.auth.msg = 'Check your inbox for the sign-in link.'; return render(); }
   if (m === 'reset') { S.ui.auth.msg = 'If that email has an account, a reset link is on its way.'; return render(); }
@@ -3813,11 +3892,108 @@ ACT.signout = async () => {
   await CAP.sb.auth.signOut(); Idle.reset(); S.session = null; S.uid = null; Store.apply({}); Store.lastSync = null; S.realMode = 'signedout'; goAuth();
 };
 
+/* ---------- Delete account ----------
+   The database function public.delete_my_account() (supabase/schema.sql) removes the login and, by cascade, every row the
+   account owns. Saving is switched off while it runs so no late write fails. Only a reply that proves the function never ran
+   (function missing, sign-in expired) is reported as "nothing was deleted"; after a lost reply the auth server is asked. */
+const DELETE_WORD = 'DELETE';
+/** This app's own sign-in keys in localStorage. Other apps on the same site address may keep theirs there too: leave those alone. */
+function ownTokenKeys() { try { const ref = new URL(CONFIG.SUPABASE_URL).hostname.split('.')[0]; return lsKeys().filter(k => k === `sb-${ref}-auth-token` || k === `sb-${ref}-auth-token-code-verifier`); } catch (e) { return []; } }
+const rejectedBeforeRunning = (e, status) => ['PGRST202', 'PGRST301', 'PGRST303', '42501', '28000'].includes(e && e.code) || status === 401 || status === 404 || /could not find the function|JWT expired|schema cache/i.test(String((e && e.message) || ''));
+function deleteAccountError(e, status, stillThere) {
+  const m = String((e && (e.message || e.code)) || e || ''), c = e && e.code;
+  if (c === 'PGRST202' || status === 404 || /could not find the function|schema cache/i.test(m)) return 'Deleting accounts is not switched on in this site’s database yet, so nothing was deleted. Whoever runs the site needs to run the latest supabase/schema.sql once (README, step 2).';
+  if (c === 'PGRST301' || c === 'PGRST303' || status === 401 || /JWT|expired|invalid token/i.test(m)) return 'Your sign-in has expired, so nothing was deleted. Sign out, sign in again, then try once more.';
+  if (c === '42501') return 'This account is not allowed to delete itself, so nothing was deleted. Whoever runs the site should run the latest supabase/schema.sql.';
+  if (stillThere === true && !(e && e.code === 'timeout')) return 'The server did not answer properly, but your account is still there, so nothing was deleted. Try again in a moment.';
+  return 'We could not confirm the result. If you can no longer sign in, the account was deleted. It is safe to try again.';
+}
+/** After a reply we could not use: does the auth server still know this sign-in? true = yes, false = it says the account does not exist, null = could not tell (every other kind of refusal included). */
+async function accountStillExists() {
+  try {
+    const { data, error } = await withTimeout(CAP.sb.auth.getUser(), 12000);
+    if (data && data.user) return true;
+    if (error && (error.code === 'user_not_found' || /does not exist/i.test(String(error.message || '')))) return false;
+  } catch (e) { }
+  return null;
+}
+/** Forget the account on this device and show the sign-up page with a message. Every step runs even if another fails or hangs; nothing here throws. */
+async function forgetAccount(message) {
+  S.mode = 'auth';   // first, so the sign-out event below does not redraw the page without our message
+  Store.frozen = true;
+  if ($('#modal-root').innerHTML) closeModal(false);   // a dialog left open would sit on top of the page below
+  const step = async f => { try { await f(); } catch (e) { console.warn('clean-up step failed', e); } };
+  await step(() => withTimeout((async () => { const sub = await Push.current(); if (sub) await sub.unsubscribe(); })(), 5000));
+  await step(() => { Idle.reset(); return endLocalSession(); });
+  await step(() => { [...ownTokenKeys(), ...lsKeys().filter(k => k.startsWith('aca:') && k !== 'aca:theme')].forEach(lsDel); });   // keeps only the light/dark choice
+  S.session = null; S.uid = null; S.realMode = 'signedout'; Store.apply({}); Store.lastSync = null; Store.w = {}; Store.frozen = false;
+  S.ui = { tab: {}, filter: { minScore: 0, status: 'open', q: '', sort: 'score' }, notifOpen: false, draft: null, prefDraft: null, auth: { mode: 'signup', msg: message, err: '', email: '' } };
+  history.replaceState(null, '', location.pathname + location.search);
+  render();
+}
+async function deleteAccount() {
+  if (S.mode !== 'cloud' || !CAP.sb) throw new Error('You are not signed in.');
+  for (let i = 0; i < 25 && Store.pending(); i++) await sleep(200);   // let the last saves finish first
+  // The sign-in is shared by every tab of this browser: right before the call, make sure it still belongs to the account the dialog named.
+  const cur = await CAP.sb.auth.getSession();
+  if (cur.error) throw new Error('Could not check your sign-in. Check your connection and try again.');
+  if (!cur.data.session) throw new Error('You are signed out in another tab. Reload this page and sign in again.');
+  if (cur.data.session.user.id !== S.uid) throw new Error('You are signed in as a different account now. Reload the page, then try again.');
+  Store.frozen = true;   // changes made from here on are kept and sent by thaw() if the deletion fails
+  let r; try { r = await withTimeout(CAP.sb.rpc('delete_my_account'), 25000); } catch (e) { r = { error: e }; }
+  if (S.mode !== 'cloud') return;   // a refused save already signed this account out while we waited: that page is showing
+  if (r.error) {
+    // Only some replies prove the function never ran. After a lost reply or a server error, ask the auth server whether the account is still there.
+    const stillThere = rejectedBeforeRunning(r.error, r.status) ? true : await accountStillExists();
+    if (S.mode !== 'cloud') return;
+    if (stillThere !== false) { Store.thaw(); throw new Error(deleteAccountError(r.error, r.status, stillThere)); }
+  }
+  await forgetAccount('Your account and everything saved in it have been deleted.');
+}
+/** The database refused a save because this account no longer exists (it was deleted, probably on another device). */
+let _gone = false;
+async function accountGone() {
+  if (_gone || S.mode !== 'cloud') return; _gone = true;
+  try { await forgetAccount('This account was deleted, so you have been signed out here too.'); } finally { _gone = false; }
+}
+ACT['delete-account'] = () => {
+  if (S.mode !== 'cloud') return;
+  const n = o => Object.keys(o || {}).length, many = (k, w) => `${k} ${w}${k === 1 ? '' : 's'}`;
+  openModal(`<form novalidate class="stack" data-form="delete-account" style="gap:14px"><h2>Delete your account?</h2>
+    <p>This permanently deletes <b>${esc((S.session && S.session.user.email) || 'your account')}</b> and everything saved in it:</p>
+    <ul class="plain small"><li>Your resume, profile and job choices</li><li>${many(n(S.jobs), 'job')} and ${many(n(S.versions), 'tailored resume')}</li><li>Your alert settings, connected devices and activity history</li></ul>
+    <p class="small"><b>This cannot be undone.</b> You will be signed out on every device. If you might want your data later, download a copy first.</p>
+    <div class="row"><button class="btn sm" type="button" data-act="export">${icon('dl')}Download my data</button></div>
+    <p class="tiny muted">Backups and system logs may keep a copy for a short time, and messages already sent to your email or Telegram stay where they are.</p>
+    <label class="f"><span>To confirm, type <b>${DELETE_WORD}</b></span><input type="text" name="confirm" id="del-confirm" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-describedby="del-err"></label>
+    <div class="banner bad" role="alert" id="del-err" hidden></div>
+    <div class="row" style="justify-content:flex-end"><button class="btn" type="button" data-act="dlg-no">Keep my account</button><button class="btn danger solid" type="submit" id="del-go" disabled>Delete my account</button></div></form>`);
+};
+FORM['delete-account'] = async f => {
+  const ok = () => String(f.confirm.value || '').trim().toUpperCase() === DELETE_WORD, sync = () => { const g = $('#del-go'); if (g) g.disabled = !ok(); };
+  if (!ok()) return sync();
+  const err = $('#del-err'); err.hidden = true;
+  f.inert = true;   // nothing in the dialog can be used, or dismissed, while the deletion runs
+  try { await Busy.local('Deleting your account…', deleteAccount); }
+  catch (e) {
+    f.inert = false; const msg = (e && e.message) || 'The account could not be deleted. Try again.';
+    if (err.isConnected) { err.textContent = msg; err.hidden = false; } else toast(msg, 'bad');   // the dialog is gone: still say what happened
+    return sync();
+  }
+  closeModal();
+};
+document.addEventListener('input', e => { if (e.target.id === 'del-confirm') { const g = $('#del-go'); if (g) g.disabled = e.target.value.trim().toUpperCase() !== DELETE_WORD; } });
+document.addEventListener('click', e => {   // show / hide the password while typing it
+  const b = e.target.closest && e.target.closest('.pw-toggle'); const i = b && b.parentElement.querySelector('input'); if (!i) return;
+  const show = i.type === 'password', label = show ? 'Hide password' : 'Show password'; i.type = show ? 'text' : 'password'; b.textContent = show ? 'Hide' : 'Show'; b.title = label; b.setAttribute('aria-label', label);
+});
+
 /* ---------- Staying signed in ----------
    Supabase keeps the session in this browser and refreshes it automatically, so a sign-in survives
    reloads, closed tabs and restarts. It ends only when you sign out, or after 30 days with no activity
    on this device. Opening the site, clicking, typing and scrolling all count as activity. */
 const IDLE_DAYS = 30, IDLE_MS = IDLE_DAYS * 24 * 3600e3, IDLE_KEY = 'aca:lastActive';
+const SEEN_KEY = 'aca:seen';   // set once someone has signed in or signed up on this browser; until then the sign-in page opens on "Create your account"
 const IDLE_MSG = `You were signed out because this device had no activity for ${IDLE_DAYS} days. Sign in again to continue.`;
 const storedSession = () => lsKeys().some(k => /^sb-.+-auth-token$/.test(k));
 const Idle = {
@@ -3837,7 +4013,7 @@ const Idle = {
 // Ends this device's session only; other signed-in devices keep theirs.
 async function endLocalSession() {
   try { const r = await withTimeout(CAP.sb.auth.signOut({ scope: 'local' }), 10000); if (r && r.error) throw r.error; }
-  catch (e) { console.warn('local sign-out', e); lsKeys().filter(k => /^sb-.+-auth-token(-code-verifier)?$/.test(k)).forEach(lsDel); }
+  catch (e) { console.warn('local sign-out', e); ownTokenKeys().forEach(lsDel); }
 }
 let _idleOut = false;
 async function idleSignOut() {
@@ -3854,7 +4030,7 @@ let _entering = false;
 async function afterLogin(session) {
   if (_entering) return; _entering = true;
   try {
-    S.session = session; S.uid = session.user.id; S.realMode = 'cloud'; S.mode = 'loading'; Idle.touch(true); render();
+    S.session = session; S.uid = session.user.id; S.realMode = 'cloud'; S.mode = 'loading'; Idle.touch(true); lsSet(SEEN_KEY, '1'); render();
     await loadAndEnter();
   } finally { _entering = false; }
 }
@@ -3889,7 +4065,7 @@ const Push = {
   supported() { return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window && location.protocol !== 'file:'; },
   async current() { try { if (!this.supported()) return null; const r = await navigator.serviceWorker.getRegistration(); return r ? await r.pushManager.getSubscription() : null; } catch (e) { return null; } },
   async enable() {
-    if (!CONFIG.VAPID_PUBLIC_KEY) throw new Error('Add VAPID_PUBLIC_KEY to config.js first (README step 5).');
+    if (!CONFIG.VAPID_PUBLIC_KEY) throw new Error('Browser alerts are not set up on this site yet. (Site owner: add VAPID_PUBLIC_KEY to config.js, README step 6.)');
     if (!this.supported()) throw new Error(/iPhone|iPad/.test(navigator.userAgent) ? 'On iPhone, add this site to your Home Screen (Share → Add to Home Screen) and open it from there to enable notifications.' : 'This browser does not support push notifications.');
     const perm = await Notification.requestPermission();
     if (perm !== 'granted') throw new Error('Notifications are blocked for this site. Allow them in your browser’s site settings, then try again.');
@@ -3916,16 +4092,17 @@ V.alerts = () => {
   const tgChat = n.telegramChatId || links.telegramChatId; const stale = st && st.lastRunAt && (Date.now() - new Date(st.lastRunAt)) > 3 * 3600e3;
   const alerts = Object.values(S.alerts || {}).sort((a, b) => b.t.localeCompare(a.t)).slice(0, 15);
   const ev = [['newJobs', 'New jobs that match your profile', 'From the job feeds, at or above your minimum score'], ['interviews', 'Interview reminders', '24 hours and 2 hours before'], ['deadlines', 'Deadlines', 'Application deadlines and offer response dates within 2 days'], ['approvals', 'Applications waiting for approval', 'After 24 hours, and before an approval expires'], ['followups', 'Follow-up nudges', 'When an application has had no update for 10 days'], ['digest', 'Daily digest', 'One summary a day at the hour below'], ['weekly', 'Weekly report', 'Mondays, with conversion rates and skill gaps']];
-  return `<div class="card"><div class="card-h"><h2>Alert server</h2>${st ? (stale ? '<span class="pill bad">Not running</span>' : '<span class="pill good">Running</span>') : '<span class="pill warn">Waiting for first run</span>'}<span class="sp"></span><span class="small muted">Last run: <b>${esc(st ? relTime(st.lastRunAt) : 'never')}</b>${st && st.lastDiscoveryAt ? ` · last job search ${esc(relTime(st.lastDiscoveryAt))}` : ''}</span></div>
+  return `<div class="card"><div class="card-h"><h2>Alerts status</h2>${st ? (stale ? '<span class="pill bad">Not running</span>' : '<span class="pill good">Running</span>') : '<span class="pill warn">Waiting for first run</span>'}<span class="sp"></span><span class="small muted">Last run: <b>${esc(st ? relTime(st.lastRunAt) : 'never')}</b>${st && st.lastDiscoveryAt ? ` · last job search ${esc(relTime(st.lastDiscoveryAt))}` : ''}</span></div>
   ${st ? `<details class="more"><summary class="small">Technical details</summary><div class="grid g2" style="margin-top:10px"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Channel</th><th>Server</th></tr></thead><tbody>${['email', 'telegram', 'push'].map(c => `<tr><td>${{ email: 'Email (Resend)', telegram: 'Telegram bot', push: 'Browser push' }[c]}</td><td>${statusPill((st.channels || {})[c])}</td></tr>`).join('')}</tbody></table></div>
   <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Job feed</th><th>Status</th><th class="r">New last run</th></tr></thead><tbody>${['greenhouse', 'lever', 'ashby', 'smartrecruiters', 'remotive', 'remoteok', 'adzuna'].map(c => `<tr><td>${SOURCE_NAME[c]}</td><td>${statusPill((st.sources || {})[c])}</td><td class="r num">${((st.discovered || {})[c]) ?? '—'}</td></tr>`).join('')}</tbody></table></div></div></details>
-  ${(st.errors || []).length ? `<div class="stripe bad small"><b>Recent server errors</b>${st.errors.slice(0, 3).map(e => `<div>${esc(fmtDT(e.t))}: ${esc(e.msg)}</div>`).join('')}</div>` : ''}` : `<p class="small">No run recorded yet. Finish the GitHub Actions step in the README, then open your repository → Actions → “Career agent” → Run workflow. Results appear here within a minute.</p>`}
+  ${(st.errors || []).length ? `<div class="stripe bad small"><b>Recent server errors</b>${st.errors.slice(0, 3).map(e => `<div>${esc(fmtDT(e.t))}: ${esc(e.msg)}</div>`).join('')}</div>` : ''}` : `<p class="small">Alerts have not started yet. A background job checks for new jobs every 30 minutes and sends the alerts. If you run this site yourself, finish step 7 of the README (GitHub → Actions → “Career agent” → Run workflow) and this page updates within a minute. Otherwise, ask whoever runs the site.</p>`}
   ${stale ? '<p class="small" style="color:var(--bad)">GitHub turns off scheduled jobs after 60 days without repository activity, and can delay runs when busy. Open Actions and click “Enable workflow” if you see a warning there.</p>' : ''}</div>
   <form novalidate class="stack" style="gap:16px" data-form="notify" id="notify-form">
   <div class="card"><div class="card-h"><h2>Where to send alerts</h2><span class="sp"></span><button class="btn sm primary" type="submit">Save</button></div>
+  <p class="small muted">Choose how you want to hear about new jobs and reminders. Tick at least one, then press Save.</p>
   <div class="repeat"><label class="check"><input type="checkbox" name="emailOn" ${n.emailOn ? 'checked' : ''}><b>Email</b></label><label class="f"><span>Send to</span><input type="email" name="email" id="nt-email" value="${esc(n.email)}" placeholder="you@example.com"></label><p class="tiny muted">On Resend’s free plan, mail is delivered only to the address you signed up to Resend with, so use that address here.</p></div>
   <div class="repeat"><label class="check"><input type="checkbox" name="telegramOn" ${n.telegramOn ? 'checked' : ''}><b>Telegram</b></label>
-  <div class="row">${tgChat ? `<span class="pill good">Connected</span><span class="small muted">chat ${esc(String(tgChat))}${links.telegramUser ? ' · @' + esc(links.telegramUser) : ''}</span>` : '<span class="pill">Not connected</span>'}${CONFIG.TELEGRAM_BOT_USERNAME ? `<button class="btn sm" type="button" data-act="tg-connect">${tgChat ? 'Reconnect' : 'Connect Telegram'}</button>` : '<span class="tiny muted">Add TELEGRAM_BOT_USERNAME to config.js to enable one-tap linking.</span>'}</div>
+  <div class="row">${tgChat ? `<span class="pill good">Connected</span><span class="small muted">chat ${esc(String(tgChat))}${links.telegramUser ? ' · @' + esc(links.telegramUser) : ''}</span>` : '<span class="pill">Not connected</span>'}${CONFIG.TELEGRAM_BOT_USERNAME ? `<button class="btn sm" type="button" data-act="tg-connect">${tgChat ? 'Reconnect' : 'Connect Telegram'}</button>` : '<span class="tiny muted">Telegram is not set up on this site yet. (Site owner: add TELEGRAM_BOT_USERNAME to config.js.)</span>'}</div>
   ${n.telegramCode && !tgChat && CONFIG.TELEGRAM_BOT_USERNAME ? `<p class="small">Open <a href="https://t.me/${esc(CONFIG.TELEGRAM_BOT_USERNAME)}?start=${esc(n.telegramCode)}" target="_blank" rel="noopener noreferrer">t.me/${esc(CONFIG.TELEGRAM_BOT_USERNAME)}</a> and tap <b>Start</b>. The next server run links your chat and sends a confirmation.</p>` : ''}
   <label class="f"><span>Or enter your chat ID manually</span><input type="text" inputmode="numeric" name="telegramChatId" id="nt-tg" value="${esc(n.telegramChatId)}" placeholder="e.g. 123456789"></label></div>
   <div class="repeat"><label class="check"><input type="checkbox" name="pushOn" ${n.pushOn ? 'checked' : ''}><b>Browser push</b> <span class="small muted">(urgent alerts only)</span></label>
@@ -3933,13 +4110,13 @@ V.alerts = () => {
   ${(n.pushSubs || []).length ? `<ul class="list small">${n.pushSubs.map((p, i) => `<li><span class="pill acc nodot">${i + 1}</span><span>${esc(p.label || 'Device')} · added ${esc(fmtDate(p.at))}</span><span class="sp"></span><button class="btn sm ghost danger" type="button" data-act="push-remove" data-i="${i}">Remove</button></li>`).join('')}</ul>` : '<p class="tiny muted">No devices yet.</p>'}
   <p class="tiny muted">On iPhone, first add this site to your Home Screen and open it from there.</p></div></div>
   <div class="card"><h2>What to alert me about</h2><div class="stack">${ev.map(([k, l, d]) => `<label class="check" style="align-items:flex-start"><input type="checkbox" name="ev_${k}" ${n.events[k] ? 'checked' : ''}><span><b>${l}</b><br><span class="tiny muted">${d}</span></span></label>`).join('')}</div>
-  <div class="fgrid"><label class="f"><span>Minimum match score for new-job alerts</span><input type="number" min="0" max="100" name="minScore" id="nt-min" value="${n.minScore}"></label><label class="f"><span>Daily digest time</span><select name="digestHour" id="nt-hour">${Array.from({ length: 24 }, (_, h) => `<option value="${h}" ${n.digestHour === h ? 'selected' : ''}>${String(h).padStart(2, '0')}:00</option>`).join('')}</select></label><label class="f"><span>Time zone</span><input type="text" name="tz" id="nt-tz" value="${esc(n.tz)}"></label></div></div>
-  <div class="card"><div class="card-h"><h2>Scheduled job search</h2><p>The server repeats the search every 6 hours with your <a href="#preferences">job preferences</a>, adds new matches to your jobs list and flags roles that have closed.</p></div>
-  <div class="stack"><label class="check"><input type="checkbox" name="feed_ats" ${n.feeds.ats ? 'checked' : ''}><span><b>Company career boards</b> <span class="small muted">the ${boardsFor(n).length} companies on your <a href="#discover">Companies &amp; import</a> list</span></span></label>
+  <div class="fgrid"><label class="f"><span>Only alert me about new jobs scoring at least (0–100)</span><input type="number" min="0" max="100" name="minScore" id="nt-min" value="${n.minScore}"></label><label class="f"><span>Daily digest time</span><select name="digestHour" id="nt-hour">${Array.from({ length: 24 }, (_, h) => `<option value="${h}" ${n.digestHour === h ? 'selected' : ''}>${String(h).padStart(2, '0')}:00</option>`).join('')}</select></label><label class="f"><span>Time zone</span><input type="text" name="tz" id="nt-tz" value="${esc(n.tz)}"></label></div></div>
+  <div class="card"><div class="card-h"><h2>Scheduled job search</h2><p>The alert server repeats your job search every 6 hours using the choices under <a href="#preferences">What job I want</a>, adds new matches to your jobs list and flags roles that have closed.</p></div>
+  <div class="stack"><label class="check"><input type="checkbox" name="feed_ats" ${n.feeds.ats ? 'checked' : ''}><span><b>Company career pages</b> <span class="small muted">the ${boardsFor(n).length} companies on your <a href="#discover">Add more jobs</a> list</span></span></label>
   <label class="check"><input type="checkbox" name="feed_remotive" ${n.feeds.remotive ? 'checked' : ''}><span><b>Remotive</b> <span class="small muted">remote roles open to India, checked daily</span></span></label>
   <label class="check"><input type="checkbox" name="feed_remoteok" ${n.feeds.remoteok ? 'checked' : ''}><span><b>Remote OK</b> <span class="small muted">remote roles open to India or worldwide, checked daily</span></span></label>
   <label class="check"><input type="checkbox" name="feed_adzuna" ${n.feeds.adzuna ? 'checked' : ''}><span><b>Adzuna</b> <span class="small muted">India-wide search (needs a free Adzuna key in GitHub secrets)</span></span></label></div>
-  <p class="small">Adzuna searches run for: ${feedQueries().length ? feedQueries().map(q => `<span class="chip">${esc(q)}</span>`).join(' ') : '<span class="muted">set job titles and cities in Job Preferences first</span>'}</p>
+  <p class="small">Adzuna searches run for: ${feedQueries().length ? feedQueries().map(q => `<span class="chip">${esc(q)}</span>`).join(' ') : '<span class="muted">choose job titles and cities under What job I want first</span>'}</p>
   <div class="row"><span class="sp"></span><button class="btn primary" type="submit">Save notification settings</button></div></div></form>
   <div class="grid g2"><div class="card"><h2>Test your setup</h2><p class="small">Sends a test message to every channel that is switched on. It goes out on the next server run (every 30 minutes), or right away if you run the workflow manually in GitHub → Actions.</p><div class="row"><button class="btn" type="button" data-act="notify-test">Send a test alert</button>${n.testAt ? `<span class="small muted">Requested ${esc(relTime(n.testAt))}${st && st.lastTestAt && st.lastTestAt >= n.testAt ? ' · <b>sent</b>' : ' · waiting for server'}</span>` : ''}</div></div>
   <div class="card"><div class="card-h"><h2>Recent alerts</h2><span class="sp"></span><button class="btn sm" type="button" data-act="sync-now">Check for updates</button></div>${alerts.length ? `<ul class="list small">${alerts.map(a => `<li><span class="tiny muted num" style="min-width:84px">${fmtDT(a.t)}</span><span><b>${esc(a.title)}</b>${a.body ? ' — ' + esc(a.body) : ''}${a.jobId && S.jobs[a.jobId] ? ` · <a href="#job-${a.jobId}">Open</a>` : ''}<br><span class="tiny muted">${esc((a.channels || []).join(', ') || 'in-app only')}</span></span></li>`).join('')}</ul>` : '<p class="muted small">No alerts yet.</p>'}</div></div>`;
@@ -4015,7 +4192,9 @@ async function boot() {
   if (S.realMode === 'signedout') {
     const linkErr = urlErr ? (/expired|invalid/i.test(urlErr) ? 'That email link has expired or was already used. Sign in with your password or request a new link.' : urlErr) : '';
     const netErr = Store.offline ? 'Can’t reach the server right now. You are still signed in on this device: check your connection, then reload the page.' : '';
-    S.mode = 'auth'; S.ui.auth = { mode: 'signin', msg: idleOut ? IDLE_MSG : qs.has('code') && !urlErr ? 'Your email is confirmed. Sign in to continue.' : '', err: linkErr || netErr };
+    // Someone who has never signed in on this browser is most likely new, so the page opens on "Create your account".
+    const firstVisit = !lsGet(SEEN_KEY) && !idleOut && !qs.has('code') && !urlErr && !netErr;
+    S.mode = 'auth'; S.ui.auth = { mode: firstVisit ? 'signup' : 'signin', msg: idleOut ? IDLE_MSG : qs.has('code') && !urlErr ? 'Your email is confirmed. Sign in to continue.' : '', err: linkErr || netErr };
     return render();
   }
   if (S.realMode === 'cloud') return afterLogin(S.session);

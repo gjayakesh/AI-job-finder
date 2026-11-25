@@ -49,7 +49,7 @@ const withTimeout = (p, ms, code = 'timeout') => { let t; return Promise.race([p
 
 /* ============ Storage: Supabase cloud database (or this browser when not configured) ============ */
 const Store = {
-  w: {}, lastSync: null, syncing: false, offline: false,
+  w: {}, lastSync: null, syncing: false, offline: false, frozen: false, // frozen: saving is switched off while an account is being deleted
   async init() {
     if (CLOUD && CAP.sb) {
       const { data, error } = await CAP.sb.auth.getSession();
@@ -102,20 +102,21 @@ const Store = {
     if (!['cloud', 'local'].includes(S.mode)) return;
     const st = this.w[key] || (this.w[key] = { busy: false, next: undefined });
     st.next = data === null ? null : clone(data);
-    if (!st.busy) this._flush(key);
+    if (!st.busy && !this.frozen) this._flush(key);   // while frozen the change is kept, and thaw() sends it
   },
   dirty(key) { const st = this.w[key]; return !!(st && (st.busy || st.next !== undefined)); },
   async _flush(key) {
     const st = this.w[key]; st.busy = true;
-    while (st.next !== undefined) {
+    while (st.next !== undefined && !this.frozen) {
       const d = st.next; st.next = undefined;
       try { await this._write(key, d); }
       catch (e) {
         const msg = String((e && (e.message || e.code)) || e);
         if (/fetch|network|timeout/i.test(msg)) { await sleep(800 + Math.random() * 1200); try { await this._write(key, d); continue; } catch (e2) { e = e2; } }
         console.warn('save failed', key, e);
+        if (e && (e.code === '23503' || /violates foreign key/i.test(String(e.message || '')))) { if (typeof accountGone === 'function') accountGone(); break; }   // the database no longer has this account: it was deleted, probably on another device
         if (/JWT|expired|401/i.test(msg)) toast('Your session expired. Sign in again to keep saving.', 'bad');
-        else if (e && e.code === 'quota_exceeded') toast('Browser storage is full. Delete old jobs or resume versions in Configuration.', 'bad');
+        else if (e && e.code === 'quota_exceeded') toast('Browser storage is full. Delete old jobs or tailored resumes you no longer need.', 'bad');
         else toast('A change could not be saved (' + msg.slice(0, 80) + '). Check your connection.', 'bad');
       }
     }
@@ -129,6 +130,8 @@ const Store = {
     } else if (S.realMode === 'local') { if (d === null) lsDel('aca:' + key); else if (!lsSet('aca:' + key, JSON.stringify(d))) throw { code: 'quota_exceeded' }; }
   },
   pending() { return Object.values(this.w).some(s => s.busy || s.next !== undefined); },
+  /** Switch saving back on and send anything that was held back. */
+  thaw() { this.frozen = false; Object.keys(this.w).forEach(k => { const s = this.w[k]; if (s.next !== undefined && !s.busy) this._flush(k); }); },
   async deleteAll() {
     if (S.realMode === 'cloud') { const { error } = await CAP.sb.from('docs').delete().eq('user_id', S.uid); if (error) throw error; }
     else lsKeys().filter(k => k.startsWith('aca:') && k !== 'aca:theme').forEach(lsDel);
@@ -264,7 +267,7 @@ const AI = {
     if (S.settings.cloudPersonal === 'deny') return false;
     const ok = await confirmDialog({
       title: 'Send your profile to Gemini?',
-      body: `<p>This step uses your resume and career profile. Gemini can write it with judgment; the local engine uses rules and templates and never leaves your browser.</p><p class="muted small">On Google’s free tier, prompts may be used to improve Google’s products. You can change this any time in Configuration.</p>`,
+      body: `<p>This step uses your resume and career profile. Gemini can write it with judgment; the local engine uses rules and templates and never leaves your browser.</p><p class="muted small">On Google’s free tier, prompts may be used to improve Google’s products. You can change this any time in Settings.</p>`,
       ok: 'Allow Gemini for profile data', cancel: 'Use local engine',
     });
     S.settings.cloudPersonal = ok ? 'allow' : 'deny'; save.settings();
@@ -273,7 +276,7 @@ const AI = {
   },
   handleErr(e) {
     const c = e && e.code;
-    if (c === 'not_granted') { CAP.sampleOK = false; toast('Gemini rejected the API key (' + ((e && e.message) || '').slice(0, 80) + '). Check it in Configuration. Using the local engine.', 'bad'); }
+    if (c === 'not_granted') { CAP.sampleOK = false; toast('Gemini rejected the API key (' + ((e && e.message) || '').slice(0, 80) + '). Check it in Settings. Using the built-in engine.', 'bad'); }
     else if (c === 'rate_limited') toast('Gemini’s free-tier limit is reached. Used the local engine instead; try again later.');
     else if (c === 'cancelled') { }
     else if (c === 'refused') toast('Gemini declined this request. Used the local engine instead.');
@@ -320,14 +323,25 @@ const Busy = {
 function openModal(html, { wide = false, onClose } = {}) {
   const root = $('#modal-root');
   root.innerHTML = `<div class="modal-bg" data-act="modal-bg"><div class="modal ${wide ? 'wide' : ''}" role="dialog" aria-modal="true">${html}</div></div>`;
+  const heading = root.querySelector('.modal h2'); if (heading) { heading.id = 'modal-title'; root.querySelector('.modal').setAttribute('aria-labelledby', 'modal-title'); }
+  if (!root._trap) {   // Tab and Shift+Tab stay inside an open dialog instead of wandering onto the page behind it
+    root._trap = true;
+    root.addEventListener('keydown', e => {
+      if (e.key !== 'Tab') return; const m = root.querySelector('.modal'); if (!m) return;
+      const f = [...m.querySelectorAll('a[href],button,input,select,textarea,[tabindex]:not([tabindex="-1"])')].filter(x => !x.disabled && x.offsetParent !== null); if (!f.length) return;
+      const out = !m.contains(document.activeElement);
+      if (e.shiftKey && (out || document.activeElement === f[0])) { e.preventDefault(); f[f.length - 1].focus(); }
+      else if (!e.shiftKey && (out || document.activeElement === f[f.length - 1])) { e.preventDefault(); f[0].focus(); }
+    });
+  }
   root._onClose = onClose; root._back = root._back || window._trigger || document.activeElement;
   const f = root.querySelector('input,textarea,select,button.primary'); if (f) setTimeout(() => f.focus(), 20);
 }
 function closeModal(val) { const root = $('#modal-root'); const cb = root._onClose, back = root._back; root._onClose = null; root._back = null; root.innerHTML = ''; if (cb) cb(val); setTimeout(() => { if (back && back.isConnected && !back.disabled && !$('#modal-root').innerHTML) back.focus(); }, 40); }
 function confirmDialog({ title, body = '', ok = 'Confirm', cancel = 'Cancel', danger = false, input = null }) {
   return new Promise(res => {
-    openModal(`<h2>${esc(title)}</h2><div class="stack">${body}</div>${input ? `<label class="f"><span>${esc(input.label)}</span><input type="text" id="dlg-input" placeholder="${esc(input.placeholder || '')}"></label>` : ''}
-      <div class="row" style="justify-content:flex-end"><button class="btn" type="button" data-act="dlg-no">${esc(cancel)}</button><button class="btn ${danger ? 'danger' : 'primary'}" type="button" data-act="dlg-yes">${esc(ok)}</button></div>`,
+    openModal(`<h2>${esc(title)}</h2><div class="stack">${body}</div>${input ? `<label class="f"><span>${esc(input.label)}</span><input type="text" id="dlg-input" autocomplete="off" spellcheck="false" placeholder="${esc(input.placeholder || '')}" ${input.match ? `data-match="${esc(input.match)}"` : ''}></label>` : ''}
+      <div class="row" style="justify-content:flex-end"><button class="btn" type="button" data-act="dlg-no">${esc(cancel)}</button><button class="btn ${danger ? 'danger solid' : 'primary'}" type="button" data-act="dlg-yes" ${input && input.match ? 'disabled' : ''}>${esc(ok)}</button></div>`,
       { onClose: v => res(v) });
   });
 }
